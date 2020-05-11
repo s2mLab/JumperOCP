@@ -26,6 +26,11 @@ def custom_func_2c_to_1c_transition(ocp, nlp, t, x, u,):
 def custom_func_1c_to_0c_transition(ocp, nlp, t, x, u,):
     val = nlp["contact_forces_func"](x[-1], u[-1])[:, 0]
     return val
+
+def custom_func_anatomical_constraint(ocp, nlp, t, x, u,):
+    val = x[0][7:14]
+    return val
+
 def prepare_ocp(
     model_path, phase_time, number_shooting_points, show_online_optim=False, use_symmetry=True,
 ):
@@ -118,6 +123,13 @@ def prepare_ocp(
             "instant": Instant.START,
         }
     )
+    # constraints_second_phase.append(
+    #     {
+    #         "type": Constraint.CUSTOM,
+    #         "function": custom_func_anatomical_constraint,
+    #         "instant": Instant.END,
+    #     }
+    # )
     if not use_symmetry:
         first_dof = (3, 4, 7, 8, 9)
         second_dof = (5, 6, 10, 11, 12)
