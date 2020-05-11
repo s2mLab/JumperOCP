@@ -221,7 +221,7 @@ def run_and_save_ocp(model_path):
 
 
 if __name__ == "__main__":
-    model_path = ("jumper2contacts.bioMod", "jumper1contacts.bioMod")
+    model_path = ("../models/jumper2contacts.bioMod", "../models/jumper1contacts.bioMod")
     run_and_save_ocp(model_path)
     ocp, sol = OptimalControlProgram.load(biorbd_model_path=model_path, name="jumper2contacts_sol.bo")
 
