@@ -23,6 +23,9 @@ def custom_func_2c_to_1c_transition(ocp, nlp, t, x, u,):
     val = ocp.nlp[0]["contact_forces_func"](x[0], u[0])[[2, 5], 0]
     return val
 
+def custom_func_1c_to_0c_transition(ocp, nlp, t, x, u,):
+    val = nlp["contact_forces_func"](x[-1], u[-1])[:, 0]
+    return val
 def prepare_ocp(
     model_path, phase_time, number_shooting_points, show_online_optim=False, use_symmetry=True,
 ):
