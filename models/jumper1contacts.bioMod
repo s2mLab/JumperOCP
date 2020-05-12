@@ -118,7 +118,7 @@ external_forces 0
     endsegment
 
     // Actuator
-        // No acturator for this segment
+        // No actuator for this segment
 
 
 
@@ -149,7 +149,7 @@ external_forces 0
     endsegment
 
     // Actuator
-        // No acturator for this segment
+        // No actuator for this segment
 
 
 
