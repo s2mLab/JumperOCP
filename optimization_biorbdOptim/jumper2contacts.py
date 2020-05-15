@@ -238,29 +238,29 @@ if __name__ == "__main__":
     run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
     ocp, sol = OptimalControlProgram.load(biorbd_model_path=model_path, name="../Results/jumper2contacts_sol.bo")
 
-    contact_forces = np.zeros((6, sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
-    cs_map = (range(6), (0, 1, 3, 4))
-
-    for i, nlp in enumerate(ocp.nlp):
-        states, controls = Data.get_data(ocp, sol["x"], phase_idx=i)
-        q, q_dot, u = states["q"], states["q_dot"], controls["tau"]
-        x = np.concatenate((q, q_dot))
-        if i == 0:
-            contact_forces[cs_map[i], : nlp["ns"] + 1] = nlp["contact_forces_func"](x, u)
-        else:
-            contact_forces[cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1] = nlp[
-                "contact_forces_func"
-            ](x, u)
-
-    names_contact_forces = ocp.nlp[0]["model"].contactNames()
-    for i, elt in enumerate(contact_forces):
-        plt.plot(elt.T, ".-", label=f"{names_contact_forces[i].to_string()}")
-    plt.legend()
-    plt.grid()
-    plt.title("Contact forces")
-    plt.show()
+    # contact_forces = np.zeros((6, sum([nlp["ns"] for nlp in ocp.nlp]) + 1))
+    # cs_map = (range(6), (0, 1, 3, 4))
+    #
+    # for i, nlp in enumerate(ocp.nlp):
+    #     states, controls = Data.get_data(ocp, sol["x"], phase_idx=i)
+    #     q, q_dot, u = states["q"], states["q_dot"], controls["tau"]
+    #     x = np.concatenate((q, q_dot))
+    #     if i == 0:
+    #         contact_forces[cs_map[i], : nlp["ns"] + 1] = nlp["contact_forces_func"](x, u)
+    #     else:
+    #         contact_forces[cs_map[i], ocp.nlp[i - 1]["ns"] : ocp.nlp[i - 1]["ns"] + nlp["ns"] + 1] = nlp[
+    #             "contact_forces_func"
+    #         ](x, u)
+    #
+    # names_contact_forces = ocp.nlp[0]["model"].contactNames()
+    # for i, elt in enumerate(contact_forces):
+    #     plt.plot(elt.T, ".-", label=f"{names_contact_forces[i].to_string()}")
+    # plt.legend()
+    # plt.grid()
+    # plt.title("Contact forces")
+    # plt.show()
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
-    # result.graphs()
+    result.graphs()
     result.animate(nb_frames=150)
