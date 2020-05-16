@@ -68,9 +68,13 @@ def prepare_ocp(
     )
 
     # Dynamics
+    # problem_type = (
+    #     ProblemType.torque_driven_with_contact,
+    #     ProblemType.torque_driven_with_contact,
+    # )
     problem_type = (
-        ProblemType.torque_driven_with_contact,
-        ProblemType.torque_driven_with_contact,
+        ProblemType.torque_activations_driven_with_contact,
+        ProblemType.torque_activations_driven_with_contact,
     )
 
     constraints_first_phase = []
