@@ -39,7 +39,7 @@ def prepare_ocp(
     biorbd_model = [biorbd.Model(elt) for elt in model_path]
 
     nb_phases = len(biorbd_model)
-    torque_min, torque_max, torque_init = -1000, 1000, 0
+    torque_activation_min, torque_activation_max, torque_activation_init = -1, 1, 0
 
     if use_symmetry:
         q_mapping = BidirectionalMapping(
@@ -198,11 +198,11 @@ def prepare_ocp(
 
     # Define control path constraint
     U_bounds = [
-        Bounds(min_bound=[torque_min] * tau_m.reduce.len, max_bound=[torque_max] * tau_m.reduce.len)
+        Bounds(min_bound=[torque_activation_min] * tau_m.reduce.len, max_bound=[torque_activation_max] * tau_m.reduce.len)
         for tau_m in tau_mapping
     ]
 
-    U_init = [InitialConditions([torque_init] * tau_m.reduce.len) for tau_m in tau_mapping]
+    U_init = [InitialConditions([torque_activation_init] * tau_m.reduce.len) for tau_m in tau_mapping]
     # ------------- #
 
     return OptimalControlProgram(
@@ -243,8 +243,10 @@ if __name__ == "__main__":
     # run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
     # ocp, sol = OptimalControlProgram.load(name="../Results/jumper2contacts_sol.bo")
 
-    ocp = prepare_ocp(model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, show_online_optim=False , use_symmetry=True)
+    ocp = prepare_ocp(model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, show_online_optim=True , use_symmetry=True)
+    # sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"})
     sol = ocp.solve()
+
 
     # --- Show results --- #
     result = ShowResult(ocp, sol)
