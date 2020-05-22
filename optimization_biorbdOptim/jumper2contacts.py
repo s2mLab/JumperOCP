@@ -43,17 +43,17 @@ def prepare_ocp(
         q_mapping = BidirectionalMapping(
             Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
         )
-        q_mapping = q_mapping, q_mapping
+        q_mapping = q_mapping, q_mapping, q_mapping
         tau_mapping = BidirectionalMapping(
             Mapping([-1, -1, -1, -1, 0, -1, 0, 1, 2, 3, 1, 2, 3], [5]), Mapping([4, 7, 8, 9])
         )
-        tau_mapping = tau_mapping, tau_mapping
+        tau_mapping = tau_mapping, tau_mapping, tau_mapping
 
     else:
         q_mapping = BidirectionalMapping(
             Mapping([i for i in range(biorbd_model[0].nbQ())]), Mapping([i for i in range(biorbd_model[0].nbQ())]),
         )
-        q_mapping = q_mapping, q_mapping
+        q_mapping = q_mapping, q_mapping, q_mapping
         tau_mapping = q_mapping
 
     # Add objective functions
@@ -63,6 +63,7 @@ def prepare_ocp(
             {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
             {"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1 / 100},
         ),
+        (),
     )
 
     # Dynamics
@@ -73,10 +74,13 @@ def prepare_ocp(
     problem_type = (
         ProblemType.torque_activations_driven_with_contact,
         ProblemType.torque_activations_driven_with_contact,
+        ProblemType.torque_activations_driven,
+
     )
 
     constraints_first_phase = []
     constraints_second_phase = []
+    constraints_third_phase = []
 
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
@@ -157,7 +161,7 @@ def prepare_ocp(
                     "coef": coeff[i],
                 }
             )
-    constraints = (constraints_first_phase, constraints_second_phase)
+    constraints = (constraints_first_phase, constraints_second_phase, constraints_third_phase)
 
     # Path constraint
     if use_symmetry:
@@ -192,6 +196,8 @@ def prepare_ocp(
     X_init = [
         InitialConditions(pose_at_first_node + [0] * nb_qdot),
         InitialConditions(pose_at_first_node + [0] * nb_qdot),
+        InitialConditions(pose_at_first_node + [0] * nb_qdot),
+
     ]
 
     # Define control path constraint
@@ -227,17 +233,19 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
         number_shooting_points=number_shooting_points,
         use_symmetry=True,
     )
-    sol = ocp.solve(show_online_optim=True)
+    # sol = ocp.solve(options_ipopt={"max_iter": 5}, show_online_optim=True)
+    sol = ocp.solve(show_online_optim=False)
+
     OptimalControlProgram.save(ocp, sol, "../Results/jumper2contacts_sol")
 
 
 if __name__ == "__main__":
-    model_path = ("../models/jumper2contacts.bioMod", "../models/jumper1contacts.bioMod")
-    phase_time = [0.4, 0.2]
-    number_shooting_points = [6, 6]
+    model_path = ("../models/jumper2contacts.bioMod", "../models/jumper1contacts.bioMod", "../models/jumper1contacts.bioMod")
+    phase_time = [0.4, 0.2, 2]
+    number_shooting_points = [6, 6, 6]
 
     run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
-    ocp, sol = OptimalControlProgram.load(name="../Results/jumper2contacts_sol.bo")
+    ocp, sol = OptimalControlProgram.load("../Results/jumper2contacts_sol.bo")
 
     # ocp = prepare_ocp(model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True)
     # sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=True)
