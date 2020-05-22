@@ -1,5 +1,3 @@
-from matplotlib import pyplot as plt
-import numpy as np
 import biorbd
 
 from biorbd_optim import (
@@ -61,9 +59,11 @@ def prepare_ocp(
         (),
         (
             {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
-            {"type": Objective.Lagrange.MINIMIZE_ALL_CONTROLS, "weight": 1 / 100},
+            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
         ),
-        (),
+        (
+            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+        ),
     )
 
     # Dynamics
@@ -234,7 +234,7 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
         use_symmetry=True,
     )
     # sol = ocp.solve(options_ipopt={"max_iter": 5}, show_online_optim=True)
-    sol = ocp.solve(show_online_optim=False)
+    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=True)
 
     OptimalControlProgram.save(ocp, sol, "../Results/jumper2contacts_sol")
 
