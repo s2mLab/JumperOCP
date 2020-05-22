@@ -13,8 +13,6 @@ from biorbd_optim import (
     Bounds,
     QAndQDotBounds,
     InitialConditions,
-    Dynamics,
-    Data,
     ShowResult,
 )
 
@@ -32,7 +30,7 @@ def custom_func_anatomical_constraint(ocp, nlp, t, x, u,):
     return val
 
 def prepare_ocp(
-    model_path, phase_time, number_shooting_points, show_online_optim=False, use_symmetry=True,
+    model_path, phase_time, number_shooting_points, use_symmetry=True,
 ):
     # --- Options --- #
     # Model path
@@ -210,16 +208,15 @@ def prepare_ocp(
         problem_type,
         number_shooting_points,
         phase_time,
-        objective_functions,
         X_init,
         U_init,
         X_bounds,
         U_bounds,
-        constraints,
+        objective_functions=objective_functions,
+        constraints=constraints,
         q_mapping=q_mapping,
         q_dot_mapping=q_mapping,
         tau_mapping=tau_mapping,
-        show_online_optim=show_online_optim,
     )
 
 
@@ -228,10 +225,9 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
         model_path=model_path,
         phase_time=phase_time,
         number_shooting_points=number_shooting_points,
-        show_online_optim=False,
         use_symmetry=True,
     )
-    sol = ocp.solve()
+    sol = ocp.solve(show_online_optim=True)
     OptimalControlProgram.save(ocp, sol, "../Results/jumper2contacts_sol")
 
 
@@ -240,12 +236,11 @@ if __name__ == "__main__":
     phase_time = [0.4, 0.2]
     number_shooting_points = [6, 6]
 
-    # run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
-    # ocp, sol = OptimalControlProgram.load(name="../Results/jumper2contacts_sol.bo")
+    run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
+    ocp, sol = OptimalControlProgram.load(name="../Results/jumper2contacts_sol.bo")
 
-    ocp = prepare_ocp(model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, show_online_optim=True , use_symmetry=True)
-    # sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"})
-    sol = ocp.solve()
+    # ocp = prepare_ocp(model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True)
+    # sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=True)
 
 
     # --- Show results --- #
