@@ -8,12 +8,13 @@ from biorbd_optim import (
     ProblemType,
     BidirectionalMapping,
     Mapping,
+    PhaseTransition,
     Bounds,
     QAndQDotBounds,
     InitialConditions,
     ShowResult,
+    Data,
 )
-
 
 def custom_func_2c_to_1c_transition(ocp, nlp, t, x, u,):
     val = ocp.nlp[0]["contact_forces_func"](x[0], u[0])[[2, 5], 0]
@@ -162,6 +163,16 @@ def prepare_ocp(
                 }
             )
     constraints = (constraints_first_phase, constraints_second_phase, constraints_third_phase)
+    for constraints_phase in constraints:
+        constraints_phase.append(
+            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max, }
+        )
+
+    # Phase transitions
+    phase_transitions = (
+        {"type": PhaseTransition.IMPACT, "phase_pre_idx": 2},
+    )
+
 
     # Path constraint
     if use_symmetry:
@@ -223,6 +234,7 @@ def prepare_ocp(
         q_mapping=q_mapping,
         q_dot_mapping=q_mapping,
         tau_mapping=tau_mapping,
+        phase_transitions=phase_transitions,
     )
 
 
@@ -241,8 +253,10 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
 
 if __name__ == "__main__":
     model_path = ("../models/jumper2contacts.bioMod", "../models/jumper1contacts.bioMod", "../models/jumper1contacts.bioMod")
-    phase_time = [0.4, 0.2, 2]
-    number_shooting_points = [6, 6, 6]
+    time_min = 0
+    time_max = 1
+    phase_time = [0.4, 0.2, 1]
+    number_shooting_points = [8, 8, 8]
 
     run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
     ocp, sol = OptimalControlProgram.load("../Results/jumper2contacts_sol.bo")
@@ -252,6 +266,9 @@ if __name__ == "__main__":
 
 
     # --- Show results --- #
+    param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
+    print(f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s and {param['time'][2, 0]}s.")
+
     result = ShowResult(ocp, sol)
     result.graphs()
     result.animate(nb_frames=150)
