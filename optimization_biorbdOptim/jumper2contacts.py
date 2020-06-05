@@ -42,17 +42,17 @@ def prepare_ocp(
         q_mapping = BidirectionalMapping(
             Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
         )
-        q_mapping = q_mapping, q_mapping, q_mapping
+        q_mapping = q_mapping, q_mapping, q_mapping, q_mapping
         tau_mapping = BidirectionalMapping(
             Mapping([-1, -1, -1, -1, 0, -1, 0, 1, 2, 3, 1, 2, 3], [5]), Mapping([4, 7, 8, 9])
         )
-        tau_mapping = tau_mapping, tau_mapping, tau_mapping
+        tau_mapping = tau_mapping, tau_mapping, tau_mapping, tau_mapping
 
     else:
         q_mapping = BidirectionalMapping(
             Mapping([i for i in range(biorbd_model[0].nbQ())]), Mapping([i for i in range(biorbd_model[0].nbQ())]),
         )
-        q_mapping = q_mapping, q_mapping, q_mapping
+        q_mapping = q_mapping, q_mapping, q_mapping, q_mapping
         tau_mapping = q_mapping
 
     # Add objective functions
@@ -65,24 +65,25 @@ def prepare_ocp(
         (
             {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
         ),
+        (
+            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+        ),
     )
 
     # Dynamics
-    # problem_type = (
-    #     ProblemType.torque_driven_with_contact,
-    #     ProblemType.torque_driven_with_contact,
-    # )
     problem_type = (
         ProblemType.torque_activations_driven_with_contact,
         ProblemType.torque_activations_driven_with_contact,
         ProblemType.torque_activations_driven,
-
+        ProblemType.torque_activations_driven_with_contact,
     )
 
     constraints_first_phase = []
     constraints_second_phase = []
     constraints_third_phase = []
+    constraints_fourth_phase = []
 
+    # Positivity constraints of the normal component of the reaction forces
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
         constraints_first_phase.append(
@@ -105,6 +106,18 @@ def prepare_ocp(
                 "boundary": 0,
             }
         )
+        constraints_fourth_phase.append(
+            {
+                "type": Constraint.CONTACT_FORCE_INEQUALITY,
+                "direction": "GREATER_THAN",
+                "instant": Instant.ALL,
+                "contact_force_idx": i,
+                "boundary": 0,
+            }
+        )
+
+    # Non-slipping constraints
+    # N.B.: Application on only one of the two feet is sufficient, as the slippage cannot occurs on only one foot.
     constraints_first_phase.append(
         {
             "type": Constraint.NON_SLIPPING,
@@ -123,6 +136,17 @@ def prepare_ocp(
             "static_friction_coefficient": 0.5,
         }
     )
+    constraints_fourth_phase.append(
+        {
+            "type": Constraint.NON_SLIPPING,
+            "instant": Instant.ALL,
+            "normal_component_idx": 1,
+            "tangential_component_idx": 0,
+            "static_friction_coefficient": 0.5,
+        }
+    )
+
+    # Custom constraints
     constraints_second_phase.append(
         {
             "type": Constraint.CUSTOM,
@@ -162,7 +186,7 @@ def prepare_ocp(
                     "coef": coeff[i],
                 }
             )
-    constraints = (constraints_first_phase, constraints_second_phase, constraints_third_phase)
+    constraints = (constraints_first_phase, constraints_second_phase, constraints_third_phase, constraints_fourth_phase)
     for constraints_phase in constraints:
         constraints_phase.append(
             {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max, }
@@ -172,7 +196,6 @@ def prepare_ocp(
     phase_transitions = (
         {"type": PhaseTransition.IMPACT, "phase_pre_idx": 2},
     )
-
 
     # Path constraint
     if use_symmetry:
@@ -204,12 +227,7 @@ def prepare_ocp(
     X_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
-    X_init = [
-        InitialConditions(pose_at_first_node + [0] * nb_qdot),
-        InitialConditions(pose_at_first_node + [0] * nb_qdot),
-        InitialConditions(pose_at_first_node + [0] * nb_qdot),
-
-    ]
+    X_init = [InitialConditions(pose_at_first_node + [0] * nb_qdot) for i in range(nb_phases)]
 
     # Define control path constraint
     U_bounds = [
@@ -252,11 +270,11 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
 
 
 if __name__ == "__main__":
-    model_path = ("../models/jumper2contacts.bioMod", "../models/jumper1contacts.bioMod", "../models/jumper1contacts.bioMod")
+    model_path = ("../models/jumper2contacts.bioMod", "../models/jumper1contacts.bioMod", "../models/jumper1contacts.bioMod", "../models/jumper1contacts.bioMod", )
     time_min = 0
     time_max = 1
-    phase_time = [0.4, 0.2, 1]
-    number_shooting_points = [8, 8, 8]
+    phase_time = [0.4, 0.2, 1, 0.4]
+    number_shooting_points = [10, 10, 10, 10]
 
     run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
     ocp, sol = OptimalControlProgram.load("../Results/jumper2contacts_sol.bo")
