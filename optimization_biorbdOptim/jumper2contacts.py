@@ -20,25 +20,30 @@ from biorbd_optim import (
 #     val = ocp.nlp[0]["contact_forces_func"](x[0], u[0])[[2, 5], -1]
 #     return val
 
-def from_2contacts_to_1(ocp, nlp, t, x, u,):
+
+def from_2contacts_to_1(ocp, nlp, t, x, u):
     return ocp.nlp[0]["contact_forces_func"](x[0], u[0])[[2, 5], -1]
 
-def from_1contact_to_0(ocp, nlp, t, x, u,):
+
+def from_1contact_to_0(ocp, nlp, t, x, u):
     return ocp.nlp[1]["contact_forces_func"](x[0], u[0])[:, -1]
 
-def from_0contact_to_1(ocp, nlp, t, x, u,):
+# TODO: toeD et talD ne doivent probalement pas être à 0
+def from_0contact_to_1(ocp, nlp, t, x, u):
     nbQ_reduced = nlp["nbQ"]
     q_reduced = nlp["X"][0][:nbQ_reduced]
     q = nlp["q_mapping"].expand.map(q_reduced)
     toeD_marker = nlp["model"].marker(q, 2).to_mx()
     return toeD_marker
 
-def from_1contact_to_2(ocp, nlp, t, x, u,):
+
+def from_1contact_to_2(ocp, nlp, t, x, u):
     nbQ_reduced = nlp["nbQ"]
     q_reduced = nlp["X"][0][:nbQ_reduced]
     q = nlp["q_mapping"].expand.map(q_reduced)
     talD_marker = nlp["model"].marker(q, 3).to_mx()
     return talD_marker
+
 
 def phase_transition_1c_to_2c(nlp_pre, nlp_post):
     nbQ = nlp_post["nbQ"]
@@ -47,13 +52,13 @@ def phase_transition_1c_to_2c(nlp_pre, nlp_post):
     talD_marker = nlp_post["model"].marker(q, 3).to_mx()
     return talD_marker
 
-def custom_func_anatomical_constraint(ocp, nlp, t, x, u,):
+
+def custom_func_anatomical_constraint(ocp, nlp, t, x, u):
     val = x[0][7:14]
     return val
 
-def prepare_ocp(
-    model_path, phase_time, number_shooting_points, use_symmetry=True,
-):
+
+def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=True):
     # --- Options --- #
     # Model path
     biorbd_model = [biorbd.Model(elt) for elt in model_path]
@@ -73,7 +78,7 @@ def prepare_ocp(
 
     else:
         q_mapping = BidirectionalMapping(
-            Mapping([i for i in range(biorbd_model[0].nbQ())]), Mapping([i for i in range(biorbd_model[0].nbQ())]),
+            Mapping([i for i in range(biorbd_model[0].nbQ())]), Mapping([i for i in range(biorbd_model[0].nbQ())])
         )
         q_mapping = q_mapping, q_mapping, q_mapping, q_mapping, q_mapping
         tau_mapping = q_mapping
@@ -84,16 +89,16 @@ def prepare_ocp(
         (),
         (
             {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
-          #  {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+            #  {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
         ),
         (
-          #  {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+            #  {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
         ),
         (
-           # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+            # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
         ),
         (
-           # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+            # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
         ),
     )
 
@@ -109,7 +114,7 @@ def prepare_ocp(
     constraints_first_phase = []
     constraints_second_phase = []
     constraints_third_phase = []
-    constraints_fourth_phase) = []
+    constraints_fourth_phase = []
     constraints_fifth_phase = []
 
     # Positivity constraints of the normal component of the reaction forces
@@ -124,15 +129,15 @@ def prepare_ocp(
                 "boundary": 0,
             }
         )
-        # constraints_fifth_phase.append(
-        #     {
-        #         "type": Constraint.CONTACT_FORCE_INEQUALITY,
-        #         "direction": "GREATER_THAN",
-        #         "instant": Instant.ALL,
-        #         "contact_force_idx": i,
-        #         "boundary": 0,
-        #     }
-        # )
+        constraints_fifth_phase.append(
+            {
+                "type": Constraint.CONTACT_FORCE_INEQUALITY,
+                "direction": "GREATER_THAN",
+                "instant": Instant.ALL,
+                "contact_force_idx": i,
+                "boundary": 0,
+            }
+        )
     contact_axes = (1, 3)
     for i in contact_axes:
         constraints_second_phase.append(
@@ -195,32 +200,16 @@ def prepare_ocp(
 
     # Custom constraints for contact forces at transitions
     constraints_second_phase.append(
-        {
-            "type": Constraint.CUSTOM,
-            "function": from_2contacts_to_1,
-            "instant": Instant.START,
-        }
+        {"type": Constraint.CUSTOM, "function": from_2contacts_to_1, "instant": Instant.START}
     )
     constraints_third_phase.append(
-        {
-            "type": Constraint.CUSTOM,
-            "function": from_1contact_to_0,
-            "instant": Instant.START,
-        }
+        {"type": Constraint.CUSTOM, "function": from_1contact_to_0, "instant": Instant.START}
     )
     constraints_fourth_phase.append(
-        {
-            "type": Constraint.CUSTOM,
-            "function": from_0contact_to_1,
-            "instant": Instant.START,
-        }
+        {"type": Constraint.CUSTOM, "function": from_0contact_to_1, "instant": Instant.START}
     )
     constraints_fifth_phase.append(
-        {
-            "type": Constraint.CUSTOM,
-            "function": from_1contact_to_2,
-            "instant": Instant.START,
-        }
+        {"type": Constraint.CUSTOM, "function": from_1contact_to_2, "instant": Instant.START}
     )
 
     if not use_symmetry:
@@ -248,16 +237,18 @@ def prepare_ocp(
                     "coef": coeff[i],
                 }
             )
-    constraints = (constraints_first_phase, constraints_second_phase, constraints_third_phase, constraints_fourth_phase, constraints_fifth_phase)
+    constraints = (
+        constraints_first_phase,
+        constraints_second_phase,
+        constraints_third_phase,
+        constraints_fourth_phase,
+        constraints_fifth_phase,
+    )
     for constraints_phase in constraints:
-        constraints_phase.append(
-            {"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max, }
-        )
+        constraints_phase.append({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max})
 
     # Phase transitions
-    state_transitions_constraints = (
-        {"type": StateTransition.IMPACT, "phase_pre_idx": 2},
-    )
+    state_transitions_constraints = ({"type": StateTransition.IMPACT, "phase_pre_idx": 2},)
 
     # Path constraint
     if use_symmetry:
@@ -267,21 +258,7 @@ def prepare_ocp(
     else:
         nb_q = q_mapping[0].reduce.len
         nb_qdot = nb_q
-        pose_at_first_node = [
-            0,
-            0,
-            -0.5336,
-            0,
-            1.4,
-            0,
-            1.4,
-            0.8,
-            -0.9,
-            0.47,
-            0.8,
-            -0.9,
-            0.47,
-        ]
+        pose_at_first_node = [0, 0, -0.5336, 0, 1.4, 0, 1.4, 0.8, -0.9, 0.47, 0.8, -0.9, 0.47]
 
     # Initialize X_bounds
     X_bounds = [QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]) for i in range(nb_phases)]
@@ -293,7 +270,9 @@ def prepare_ocp(
 
     # Define control path constraint
     U_bounds = [
-        Bounds(min_bound=[torque_activation_min] * tau_m.reduce.len, max_bound=[torque_activation_max] * tau_m.reduce.len)
+        Bounds(
+            min_bound=[torque_activation_min] * tau_m.reduce.len, max_bound=[torque_activation_max] * tau_m.reduce.len
+        )
         for tau_m in tau_mapping
     ]
 
@@ -320,18 +299,22 @@ def prepare_ocp(
 
 def run_and_save_ocp(model_path, phase_time, number_shooting_points):
     ocp = prepare_ocp(
-        model_path=model_path,
-        phase_time=phase_time,
-        number_shooting_points=number_shooting_points,
-        use_symmetry=True,
+        model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True
     )
     # sol = ocp.solve(options_ipopt={"max_iter": 5}, show_online_optim=True)
-    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory", }, show_online_optim=False)
+    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=False)
 
     OptimalControlProgram.save(ocp, sol, "../Results/jumper2contacts_sol")
 
+
 if __name__ == "__main__":
-    model_path = ("../models/jumper2contacts.bioMod", "../models/jumper1contacts.bioMod", "../models/jumper1contacts.bioMod", "../models/jumper1contacts.bioMod", "../models/jumper1contacts.bioMod", )
+    model_path = (
+        "../models/jumper2contacts.bioMod",
+        "../models/jumper1contacts.bioMod",
+        "../models/jumper1contacts.bioMod",
+        "../models/jumper1contacts.bioMod",
+        "../models/jumper2contacts.bioMod",
+    )
     time_min = 0
     time_max = 1
     phase_time = [0.4, 0.2, 1, 0.4, 0.3]
@@ -343,11 +326,12 @@ if __name__ == "__main__":
     # ocp = prepare_ocp(model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True)
     # sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=True)
 
-
     # --- Show results --- #
     param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
-    print(f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s and {param['time'][3, 0]}s.")
+    print(
+        f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s and {param['time'][3, 0]}s."
+    )
 
     result = ShowResult(ocp, sol)
-    result.graphs()
+    # result.graphs()
     result.animate(nb_frames=150)
