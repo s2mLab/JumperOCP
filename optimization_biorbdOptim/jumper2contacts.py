@@ -34,7 +34,7 @@ def from_0contact_to_1(ocp, nlp, t, x, u):
     q_reduced = nlp["X"][0][:nbQ_reduced]
     q = nlp["q_mapping"].expand.map(q_reduced)
     toeD_marker = nlp["model"].marker(q, 2).to_mx()
-    return toeD_marker
+    return toeD_marker + 0.77865438             # -0.77865438 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
 
 
 def from_1contact_to_2(ocp, nlp, t, x, u):
@@ -42,7 +42,7 @@ def from_1contact_to_2(ocp, nlp, t, x, u):
     q_reduced = nlp["X"][0][:nbQ_reduced]
     q = nlp["q_mapping"].expand.map(q_reduced)
     talD_marker = nlp["model"].marker(q, 3).to_mx()
-    return talD_marker
+    return talD_marker + 0.77865829             # -0.77865829 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
 
 
 def phase_transition_1c_to_2c(nlp_pre, nlp_post):
