@@ -28,13 +28,16 @@ def from_2contacts_to_1(ocp, nlp, t, x, u, p):
 def from_1contact_to_0(ocp, nlp, t, x, u, p):
     return ocp.nlp[1]["contact_forces_func"](x[0], u[0], p)[:, -1]
 
+
 # TODO: toeD et talD ne doivent probalement pas être à 0
 def from_0contact_to_1(ocp, nlp, t, x, u, p):
     nbQ_reduced = nlp["nbQ"]
     q_reduced = nlp["X"][0][:nbQ_reduced]
     q = nlp["q_mapping"].expand.map(q_reduced)
     toeD_marker_z = nlp["model"].marker(q, 2).to_mx()[2]
-    return toeD_marker_z + 0.77865438             # -0.77865438 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
+    return (
+        toeD_marker_z + 0.77865438
+    )  # -0.77865438 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
 
 
 def from_1contact_to_2(ocp, nlp, t, x, u, p):
@@ -42,7 +45,9 @@ def from_1contact_to_2(ocp, nlp, t, x, u, p):
     q_reduced = nlp["X"][0][:nbQ_reduced]
     q = nlp["q_mapping"].expand.map(q_reduced)
     talD_marker_z = nlp["model"].marker(q, 3).to_mx()[2]
-    return talD_marker_z + 0.77865829             # -0.77865829 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
+    return (
+        talD_marker_z + 0.77865829
+    )  # -0.77865829 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
 
 
 # def phase_transition_1c_to_2c(nlp_pre, nlp_post):
@@ -84,7 +89,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
         tau_mapping = q_mapping
 
     # Add objective functions
-    # TODO: Check if MINIMIZE_TORQUE obj func are usefull for convergence or not
+    # TODO: Check if MINIMIZE_TORQUE obj func are useful for convergence or not
     objective_functions = (
         (),
         (
@@ -215,28 +220,24 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     if not use_symmetry:
         first_dof = (3, 4, 7, 8, 9)
         second_dof = (5, 6, 10, 11, 12)
-        coeff = (-1, 1, 1, 1, 1)
+        coef = (-1, 1, 1, 1, 1)
         for i in range(len(first_dof)):
-            constraints_first_phase.append(
-                {
-                    "type": Constraint.PROPORTIONAL_STATE,
-                    "instant": Instant.ALL,
-                    "first_dof": first_dof[i],
-                    "second_dof": second_dof[i],
-                    "coef": coeff[i],
-                }
-            )
-        # TODO: Check redundant loop here + Add other phases
-        for i in range(len(first_dof)):
-            constraints_second_phase.append(
-                {
-                    "type": Constraint.PROPORTIONAL_STATE,
-                    "instant": Instant.ALL,
-                    "first_dof": first_dof[i],
-                    "second_dof": second_dof[i],
-                    "coef": coeff[i],
-                }
-            )
+            for elt in [
+                constraints_first_phase,
+                constraints_second_phase,
+                constraints_third_phase,
+                constraints_fourth_phase,
+                constraints_fifth_phase,
+            ]:
+                elt.append(
+                    {
+                        "type": Constraint.PROPORTIONAL_STATE,
+                        "instant": Instant.ALL,
+                        "first_dof": first_dof[i],
+                        "second_dof": second_dof[i],
+                        "coef": coef[i],
+                    }
+                )
     constraints = (
         constraints_first_phase,
         constraints_second_phase,
@@ -299,7 +300,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
 
 def run_and_save_ocp(model_path, phase_time, number_shooting_points):
     ocp = prepare_ocp(
-        model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True
+        model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=False
     )
     # sol = ocp.solve(options_ipopt={"max_iter": 5}, show_online_optim=True)
     sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=False)
