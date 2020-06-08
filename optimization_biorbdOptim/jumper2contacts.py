@@ -248,7 +248,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     for constraints_phase in constraints:
         constraints_phase.append({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max})
 
-    # Phase transitions
+    # State transitions
     state_transitions = ({"type": StateTransition.IMPACT, "phase_pre_idx": 2},)
 
     # Path constraint
@@ -265,6 +265,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     X_bounds = [QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]) for i in range(nb_phases)]
     X_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot
     X_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
+    X_bounds[4].min[:, -1] = pose_at_first_node + [0] * nb_qdot
+    X_bounds[4].max[:, -1] = pose_at_first_node + [0] * nb_qdot
 
     # Initial guess
     X_init = [InitialConditions(pose_at_first_node + [0] * nb_qdot) for i in range(nb_phases)]
@@ -310,11 +312,11 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
 
 if __name__ == "__main__":
     model_path = (
-        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper2contacts.bioMod",
-        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper1contacts.bioMod",
-        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper1contacts.bioMod",
-        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper1contacts.bioMod",
-        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper2contacts.bioMod",
+        "../models/jumper2contacts.bioMod",
+        "../models/jumper1contacts.bioMod",
+        "../models/jumper1contacts.bioMod",
+        "../models/jumper1contacts.bioMod",
+        "../models/jumper2contacts.bioMod",
     )
     time_min = 0
     time_max = 1
@@ -330,7 +332,7 @@ if __name__ == "__main__":
     # --- Show results --- #
     param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
     print(
-        f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s and {param['time'][3, 0]}s."
+        f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s, {param['time'][3, 0]}s and {param['time'][4, 0]}s."
     )
 
     result = ShowResult(ocp, sol)
