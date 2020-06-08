@@ -16,44 +16,44 @@ from biorbd_optim import (
     Data,
 )
 
-# def constraint_2c_to_1c_transition(ocp, nlp, t, x, u,):
-#     val = ocp.nlp[0]["contact_forces_func"](x[0], u[0])[[2, 5], -1]
+# def constraint_2c_to_1c_transition(ocp, nlp, t, x, u, p):
+#     val = ocp.nlp[0]["contact_forces_func"](x[0], u[0], p)[[2, 5], -1]
 #     return val
 
 
-def from_2contacts_to_1(ocp, nlp, t, x, u):
-    return ocp.nlp[0]["contact_forces_func"](x[0], u[0])[[2, 5], -1]
+def from_2contacts_to_1(ocp, nlp, t, x, u, p):
+    return ocp.nlp[0]["contact_forces_func"](x[0], u[0], p)[[2, 5], -1]
 
 
-def from_1contact_to_0(ocp, nlp, t, x, u):
-    return ocp.nlp[1]["contact_forces_func"](x[0], u[0])[:, -1]
+def from_1contact_to_0(ocp, nlp, t, x, u, p):
+    return ocp.nlp[1]["contact_forces_func"](x[0], u[0], p)[:, -1]
 
 # TODO: toeD et talD ne doivent probalement pas être à 0
-def from_0contact_to_1(ocp, nlp, t, x, u):
+def from_0contact_to_1(ocp, nlp, t, x, u, p):
     nbQ_reduced = nlp["nbQ"]
     q_reduced = nlp["X"][0][:nbQ_reduced]
     q = nlp["q_mapping"].expand.map(q_reduced)
-    toeD_marker = nlp["model"].marker(q, 2).to_mx()
-    return toeD_marker + 0.77865438             # -0.77865438 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
+    toeD_marker_z = nlp["model"].marker(q, 2).to_mx()[2]
+    return toeD_marker_z + 0.77865438             # -0.77865438 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
 
 
-def from_1contact_to_2(ocp, nlp, t, x, u):
+def from_1contact_to_2(ocp, nlp, t, x, u, p):
     nbQ_reduced = nlp["nbQ"]
     q_reduced = nlp["X"][0][:nbQ_reduced]
     q = nlp["q_mapping"].expand.map(q_reduced)
-    talD_marker = nlp["model"].marker(q, 3).to_mx()
-    return talD_marker + 0.77865829             # -0.77865829 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
+    talD_marker_z = nlp["model"].marker(q, 3).to_mx()[2]
+    return talD_marker_z + 0.77865829             # -0.77865829 is the value returned with Eigen by the 3rd dim. of toeD_marker CoM at pose_at_first_node
 
 
-def phase_transition_1c_to_2c(nlp_pre, nlp_post):
-    nbQ = nlp_post["nbQ"]
-    q_reduced = nlp_post["X"][0][:nbQ]
-    q = nlp_post["q_mapping"].expand.map(q_reduced)
-    talD_marker = nlp_post["model"].marker(q, 3).to_mx()
-    return talD_marker
+# def phase_transition_1c_to_2c(nlp_pre, nlp_post):
+#     nbQ = nlp_post["nbQ"]
+#     q_reduced = nlp_post["X"][0][:nbQ]
+#     q = nlp_post["q_mapping"].expand.map(q_reduced)
+#     talD_marker = nlp_post["model"].marker(q, 3).to_mx()
+#     return talD_marker
 
 
-def custom_func_anatomical_constraint(ocp, nlp, t, x, u):
+def custom_func_anatomical_constraint(ocp, nlp, t, x, u, p):
     val = x[0][7:14]
     return val
 
@@ -248,7 +248,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
         constraints_phase.append({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max})
 
     # Phase transitions
-    state_transitions_constraints = ({"type": StateTransition.IMPACT, "phase_pre_idx": 2},)
+    state_transitions = ({"type": StateTransition.IMPACT, "phase_pre_idx": 2},)
 
     # Path constraint
     if use_symmetry:
@@ -293,7 +293,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
         q_mapping=q_mapping,
         q_dot_mapping=q_mapping,
         tau_mapping=tau_mapping,
-        state_transitions_constraints=state_transitions_constraints,
+        state_transitions=state_transitions,
     )
 
 
@@ -309,11 +309,11 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
 
 if __name__ == "__main__":
     model_path = (
-        "../models/jumper2contacts.bioMod",
-        "../models/jumper1contacts.bioMod",
-        "../models/jumper1contacts.bioMod",
-        "../models/jumper1contacts.bioMod",
-        "../models/jumper2contacts.bioMod",
+        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper2contacts.bioMod",
+        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper1contacts.bioMod",
+        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper1contacts.bioMod",
+        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper1contacts.bioMod",
+        "/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper2contacts.bioMod",
     )
     time_min = 0
     time_max = 1
