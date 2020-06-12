@@ -20,7 +20,6 @@ from biorbd_optim import (
 #     val = ocp.nlp[0]["contact_forces_func"](x[0], u[0], p)[[2, 5], -1]
 #     return val
 
-
 def from_2contacts_to_1(ocp, nlp, t, x, u, p):
     return ocp.nlp[0]["contact_forces_func"](x[0], u[0], p)[[2, 5], -1]
 
@@ -247,6 +246,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     )
     for constraints_phase in constraints:
         constraints_phase.append({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max})
+        # custom constraint for debug
+        # constraints_phase.append({"type": Constraint.CUSTOM, "function": custom_debug, "instant": Instant.START})
 
     # State transitions
     state_transitions = ({"type": StateTransition.IMPACT, "phase_pre_idx": 2},)
@@ -302,7 +303,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
 
 def run_and_save_ocp(model_path, phase_time, number_shooting_points):
     ocp = prepare_ocp(
-        model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=False
+        model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True
     )
     # sol = ocp.solve(options_ipopt={"max_iter": 5}, show_online_optim=True)
     sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=False)
@@ -318,10 +319,10 @@ if __name__ == "__main__":
         "../models/jumper1contacts.bioMod",
         "../models/jumper2contacts.bioMod",
     )
-    time_min = 0
+    time_min = 0.1
     time_max = 1
     phase_time = [0.4, 0.2, 1, 0.4, 0.3]
-    number_shooting_points = [10, 10, 10, 10, 10]
+    number_shooting_points = [10, 10, 20, 10, 10]
 
     run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
     ocp, sol = OptimalControlProgram.load("../Results/jumper2contacts_sol.bo")
@@ -336,5 +337,5 @@ if __name__ == "__main__":
     )
 
     result = ShowResult(ocp, sol)
-    # result.graphs()
+    result.graphs()
     result.animate(nb_frames=150)
