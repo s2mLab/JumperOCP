@@ -1,0 +1,161 @@
+version    3
+
+// General informations
+root_actuated 0
+external_forces 0
+
+
+
+// Segment 1
+segment Seg1
+    translations yz
+    mass    9.03529
+    inertia
+        0.04664    0.00000    0.00000
+        0.00000    0.07178    0.00000
+        0.00000    0.00000    0.06989
+    com     0         0    0.0885
+    mesh   -0.1038    0.0821         0
+    mesh    0.1038    0.0850         0
+    mesh    0.1435    0.0072    0.0351
+    mesh    0.0514   -0.0833   -0.0020
+    mesh   -0.0514   -0.0838    0.0020
+    mesh   -0.1432   -0.0024    0.0344
+    mesh   -0.1038    0.0821         0
+endsegment
+
+
+// Actuator
+    actuator    Seg1
+        type    Constant
+        dof    TransY
+        direction    positive
+        Tmax    0.000000
+    endactuator
+    actuator    Seg1
+        type    Constant
+        dof    TransZ
+        direction    positive
+        Tmax    0.000000
+    endactuator
+    actuator    Seg1
+        type    Constant
+        dof    TransY
+        direction    negative
+        Tmax    0.000000
+    endactuator
+    actuator    Seg1
+        type    Constant
+        dof    TransZ
+        direction    negative
+        Tmax    0.000000
+    endactuator
+
+// Segment 2
+segment Seg2
+    translations xz
+    mass    9.03529
+    inertia
+        0.04664    0.00000    0.00000
+        0.00000    0.07178    0.00000
+        0.00000    0.00000    0.06989
+    com     0         0    0.0885
+    mesh   -0.1038    0.0821         0
+    mesh    0.1038    0.0850         0
+    mesh    0.1435    0.0072    0.0351
+    mesh    0.0514   -0.0833   -0.0020
+    mesh   -0.0514   -0.0838    0.0020
+    mesh   -0.1432   -0.0024    0.0344
+    mesh   -0.1038    0.0821         0
+endsegment
+
+
+// Actuator
+    actuator    Seg2
+        type    Constant
+        dof    TransX
+        direction    positive
+        Tmax    0.000000
+    endactuator
+    actuator    Seg2
+        type    Constant
+        dof    TransZ
+        direction    positive
+        Tmax    0.000000
+    endactuator
+    actuator    Seg2
+        type    Constant
+        dof    TransX
+        direction    negative
+        Tmax    0.000000
+    endactuator
+    actuator    Seg2
+        type    Constant
+        dof    TransZ
+        direction    negative
+        Tmax    0.000000
+    endactuator
+
+    // Segment 3
+segment Seg3
+    translations zy
+    mass    9.03529
+    inertia
+        0.04664    0.00000    0.00000
+        0.00000    0.07178    0.00000
+        0.00000    0.00000    0.06989
+    com     0         0    0.0885
+    mesh   -0.1038    0.0821         0
+    mesh    0.1038    0.0850         0
+    mesh    0.1435    0.0072    0.0351
+    mesh    0.0514   -0.0833   -0.0020
+    mesh   -0.0514   -0.0838    0.0020
+    mesh   -0.1432   -0.0024    0.0344
+    mesh   -0.1038    0.0821         0
+endsegment
+
+
+// Actuator
+    actuator    Seg3
+        type    Constant
+        dof    TransZ
+        direction    positive
+        Tmax    0.000000
+    endactuator
+    actuator    Seg3
+        type    Constant
+        dof    TransY
+        direction    positive
+        Tmax    0.000000
+    endactuator
+    actuator    Seg3
+        type    Constant
+        dof    TransZ
+        direction    negative
+        Tmax    0.000000
+    endactuator
+    actuator    Seg3
+        type    Constant
+        dof    TransY
+        direction    negative
+        Tmax    0.000000
+    endactuator
+
+
+
+    // Contacts
+    contact    contact_Seg1
+        parent    Seg1
+        position    -0.00465    0.15809    0.00611
+        axis    z
+    endcontact
+    contact    contact_Seg2
+        parent    Seg2
+        position    0.00757    0.01189    -0.01802
+        axis    yz
+    endcontact
+    contact    contact_Seg3
+        parent    Seg3
+        position    -0.00465    0.15809    0.00611
+        axis    z
+    endcontact
