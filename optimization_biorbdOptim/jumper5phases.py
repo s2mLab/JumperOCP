@@ -306,9 +306,9 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
         model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True
     )
     # sol = ocp.solve(options_ipopt={"max_iter": 5}, show_online_optim=True)
-    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=False)
+    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory", "max_iter": 1}, show_online_optim=False)
 
-    OptimalControlProgram.save(ocp, sol, "../Results/jumper2contacts_sol")
+    OptimalControlProgram.save_get_data(ocp, sol, "../Results/jumper5phases_sol")
 
 
 if __name__ == "__main__":
@@ -325,10 +325,10 @@ if __name__ == "__main__":
     number_shooting_points = [10, 10, 20, 10, 10]
 
     run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
-    ocp, sol = OptimalControlProgram.load("../Results/jumper2contacts_sol.bo")
+    ocp, sol = OptimalControlProgram.load("../Results/jumper5phases_sol.bo")
 
     # ocp = prepare_ocp(model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True)
-    # sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=True)
+    # sol = ocp.solve(show_online_optim=False, options_ipopt={"hessian_approximation": "limited-memory", "max_iter": 2})
 
     # --- Show results --- #
     param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
@@ -337,5 +337,5 @@ if __name__ == "__main__":
     )
 
     result = ShowResult(ocp, sol)
-    result.graphs()
-    result.animate(nb_frames=150)
+    # result.graphs()
+    result.animate()
