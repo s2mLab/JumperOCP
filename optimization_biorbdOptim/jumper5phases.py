@@ -306,7 +306,7 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
         model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True
     )
     # sol = ocp.solve(options_ipopt={"max_iter": 5}, show_online_optim=True)
-    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory", "max_iter": 1}, show_online_optim=False)
+    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory", "max_iter": 10}, show_online_optim=False)
 
     OptimalControlProgram.save_get_data(ocp, sol, "../Results/jumper5phases_sol")
 
@@ -338,4 +338,4 @@ if __name__ == "__main__":
 
     result = ShowResult(ocp, sol)
     # result.graphs()
-    result.animate()
+    result.animate(nb_frames=61)
