@@ -3,6 +3,29 @@ from copy import copy
 import biorbd
 import numpy as np 
 
+
+def computeTorqueMaxAndForces(q, qdot):
+	torqueMax = m.torque(torque_act, q, qdot).to_array()
+	
+	tau_no_root = copy(torqueMax)
+	tau_no_root[:3,] = 0
+	cs = m.getConstraints()
+	
+	qddot_with_v = m.ForwardDynamicsConstraintsDirect(q, qdot, tau_no_root, cs).to_array()
+	forces = cs.getForce().to_array()
+
+	return torqueMax, forces
+	
+	
+"""
+	print(f"\n\nFor position {i}: \n\n-> With qdot null, torqueMax and forces are: \n{torque[0]} \n{cs_without_v.getForce().to_array()} \n\n-> With non-zero qdot torqueMax are: \n{torque[1]} \nand forces are : \n{cs_with_v.getForce().to_array()}")
+	print("\n")
+	keys = list(torque_evolution.keys())
+	for i in range(len(keys)):
+		print(f"{keys[i]}: \n	from {torque[0][i]} without velocity to {torque[1][i]} with non-zero velocity i.e. {round(torque_evolution[keys[i]],2)}%")
+	print("\n\n")
+"""
+
 m = biorbd.Model("/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper2contacts.bioMod")
 
 q0 = np.array([0, 0, -0.5336, 0, 1.4, 0, 1.4, 0.8, -0.9, 0.47, 0.8, -0.9, 0.47])
@@ -22,28 +45,44 @@ qdot2 = np.array([ 0.03517037, -0.53697087, -1.70861396,  0.        ,  0.8484276
 
 torque_act = np.array([0, 0, 0, 0, 1, 0, 1, -1, 1, -1, -1, 1, -1])
 
-name = [m.nameDof()[i].to_string() for i in range(m.nbDof())] 
+contact_names = [m.contactName(i).to_string() for i in range(m.nbContacts())] 
 
 print(f"\n\nMass of the model : {m.mass()}")
 print("3 key positions: node 0 (with qdot0 = qdot at node 1), node 45, and node 54\n")
 
-def computeTorque(i, q, qdot):
-	torque = [m.torque(torque_act, q, qdot_null).to_array(), m.torque(torque_act, q, qdot).to_array()]
-	torque_evolution = {f"{name[i]}": torque[1][i]/torque[0][i]*100 for i in range(len(name))}
-	tau_from_id_qdot_null = m.InverseDynamics(q, qdot_null, np.zeros((13,)), None).to_array()
-	tau_no_root = copy(tau_from_id_qdot_null)
-	tau_no_root[:3,] = 0
-	cs = m.getConstraints()
-	qddot = m.ForwardDynamicsConstraintsDirect(q, qdot_null, tau_no_root, cs).to_array()
+torqueMax_0_qdot_null, forces_0_qdot_null = computeTorqueMaxAndForces(q0, qdot_null)
+torqueMax_0, forces_0 = computeTorqueMaxAndForces(q0, qdot0)
+# torqueMax_evolution_0 = {f"{name[i]}": torqueMax_0_qdot_null[i]/torqueMax_0[i]*100 for i in range(len(name))}
+contact_forces_evolution_0 = {f"{contact_names[i]}": forces_0_qdot_null[i]/forces_0[i]*100 for i in range(len(contact_names))}
 
-	print(f"\n\nFor position {i}: \n\n-> With qdot null, torqueMax and forces are: \n{torque[0]} \n{cs.getForce().to_array()} \n\n-> With non-zero qdot: \n{torque[1]}")
-	print("\n")
-	keys = list(torque_evolution.keys())
-	for i in range(len(keys)):
-		print(f"{keys[i]}: \n	from {torque[0][i]} without velocity to {torque[1][i]} with non-zero velocity i.e. {round(torque_evolution[keys[i]],2)}%")
-	print("\n\n")
-	
-computeTorque(0, q0, qdot0)
-computeTorque(1, q1, qdot1)
-computeTorque(2, q2, qdot2)
+print(f"\nFor position 0: \n\n -> With qdot null, torqueMax are: \n{torqueMax_0_qdot_null} \nand reaction forces are: \n {forces_0_qdot_null} \n\n")
+print(f"-> With non-zero qdot, torqueMax are: \n{torqueMax_0} \nand reaction forces are: \n {forces_0} \n\n")
+print("Regarding the effect of a non-zero qdot on contact forces:")
+keys = list(contact_forces_evolution_0.keys())
+for i in range(len(keys)):
+	print(f"{keys[i]}: \n	from {forces_0_qdot_null[i]} with qdot null to {forces_0[i]} with non-zero velocity i.e. {round(contact_forces_evolution_0[keys[i]],2)}%")
+
+torqueMax_1_qdot_null, forces_1_qdot_null = computeTorqueMaxAndForces(q1, qdot_null)
+torqueMax_1, forces_1 = computeTorqueMaxAndForces(q1, qdot1)
+# torqueMax_evolution_1 = {f"{name[i]}": torqueMax_1_qdot_null[i]/torqueMax_1[i]*100 for i in range(len(name))}
+contact_forces_evolution_1 = {f"{contact_names[i]}": forces_1_qdot_null[i]/forces_1[i]*100 for i in range(len(contact_names))}
+
+print(f"\n\nFor position 1: \n\n -> With qdot null, torqueMax are: \n{torqueMax_1_qdot_null} \nand reaction forces are: \n {forces_1_qdot_null} \n\n")
+print(f"-> With non-zero qdot, torqueMax are: \n{torqueMax_1} \nand reaction forces are: \n {forces_1} \n\n")
+print("Regarding the effect of a non-zero qdot on contact forces:")
+for i in range(len(keys)):
+	print(f"{keys[i]}: \n	from {forces_1_qdot_null[i]} with qdot null to {forces_1[i]} with non-zero velocity i.e. {round(contact_forces_evolution_1[keys[i]],2)}%")
+
+torqueMax_2_qdot_null, forces_2_qdot_null = computeTorqueMaxAndForces(q2, qdot_null)
+torqueMax_2, forces_2 = computeTorqueMaxAndForces(q2, qdot2)
+# torqueMax_evolution_2 = {f"{name[i]}": torqueMax_2_qdot_null[i]/torqueMax_2[i]*100 for i in range(len(name))}
+contact_forces_evolution_2 = {f"{contact_names[i]}": forces_2_qdot_null[i]/forces_2[i]*100 for i in range(len(contact_names))}
+
+print(f"For position 2: \n\n -> With qdot null, torqueMax are: \n{torqueMax_2_qdot_null} \nand reaction forces are: \n {forces_2_qdot_null} \n\n")
+print(f"-> With non-zero qdot, torqueMax are: \n{torqueMax_0} \nand reaction forces are: \n {forces_0} \n\n")
+print("Regarding the effect of a non-zero qdot on contact forces:")
+for i in range(len(keys)):
+	print(f"{keys[i]}: \n	from {forces_2_qdot_null[i]} with qdot null to {forces_2[i]} with non-zero velocity i.e. {round(contact_forces_evolution_2[keys[i]],2)}%")
+
+print("\n\n")
 
