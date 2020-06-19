@@ -19,8 +19,8 @@ from biorbd_optim import (
 
 # TODO: No custom constraint 1 contact to 0 added here yet
 
-def from_2contacts_to_1(ocp, nlp, t, x, u, p):
-    return ocp.nlp[0]["contact_forces_func"](x[0], u[0], p)[[2, 5], -1]
+# def from_2contacts_to_1(ocp, nlp, t, x, u, p):
+#     return ocp.nlp[0]["contact_forces_func"](x[0], u[0], p)[[2, 5], -1]
 
 # def custom_func_anatomical_constraint(ocp, nlp, t, x, u, p):
 #     val = x[0][7:14]
