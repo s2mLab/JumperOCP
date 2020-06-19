@@ -28,7 +28,6 @@ def from_1contact_to_0(ocp, nlp, t, x, u, p):
     return ocp.nlp[1]["contact_forces_func"](x[0], u[0], p)[:, -1]
 
 
-# TODO: toeD et talD ne doivent probalement pas être à 0
 def from_0contact_to_1(ocp, nlp, t, x, u, p):
     nbQ_reduced = nlp["nbQ"]
     q_reduced = nlp["X"][0][:nbQ_reduced]
@@ -88,31 +87,30 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
         tau_mapping = q_mapping
 
     # Add objective functions
-    # TODO: Check if MINIMIZE_TORQUE obj func are useful for convergence or not
     objective_functions = (
         (),
         (
             {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
-            #  {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
         ),
         (
-            #  {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
         ),
         (
-            # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
         ),
         (
-            # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": 1 / 100},
+            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
         ),
     )
 
     # Dynamics
     problem_type = (
-        ProblemType.torque_activations_driven_with_contact,
-        ProblemType.torque_activations_driven_with_contact,
-        ProblemType.torque_activations_driven,
-        ProblemType.torque_activations_driven_with_contact,
-        ProblemType.torque_activations_driven_with_contact,
+        {"type": ProblemType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT},
+        {"type": ProblemType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT},
+        {"type": ProblemType.TORQUE_ACTIVATIONS_DRIVEN},
+        {"type": ProblemType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT},
+        {"type": ProblemType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT},
     )
 
     constraints_first_phase = []
@@ -244,10 +242,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
         constraints_fourth_phase,
         constraints_fifth_phase,
     )
-    for constraints_phase in constraints:
-        constraints_phase.append({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min, "maximum": time_max})
-        # custom constraint for debug
-        # constraints_phase.append({"type": Constraint.CUSTOM, "function": custom_debug, "instant": Instant.START})
+    for i, constraints_phase in enumerate(constraints):
+        constraints_phase.append({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[i], "maximum": time_max[i]})
 
     # State transitions
     state_transitions = ({"type": StateTransition.IMPACT, "phase_pre_idx": 2},)
@@ -306,9 +302,9 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
         model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True
     )
     # sol = ocp.solve(options_ipopt={"max_iter": 5}, show_online_optim=True)
-    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory", "max_iter": 10}, show_online_optim=False)
+    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=True)
 
-    OptimalControlProgram.save_get_data(ocp, sol, "../Results/jumper5phases_sol")
+    OptimalControlProgram.save(ocp, sol, "../Results/jumper5phases_sol")
 
 
 if __name__ == "__main__":
@@ -319,9 +315,9 @@ if __name__ == "__main__":
         "../models/jumper1contacts.bioMod",
         "../models/jumper2contacts.bioMod",
     )
-    time_min = 0.1
-    time_max = 1
-    phase_time = [0.4, 0.2, 1, 0.4, 0.3]
+    time_min = [0.05, 0.1, 0.1, 0.05, 0.1]
+    time_max = [0.2, 0.2, 2, 0.4, 0.3]
+    phase_time = [0.2, 0.2, 1, 0.4, 0.3]
     number_shooting_points = [10, 10, 20, 10, 10]
 
     run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
@@ -337,5 +333,5 @@ if __name__ == "__main__":
     )
 
     result = ShowResult(ocp, sol)
-    # result.graphs()
+    result.graphs()
     result.animate(nb_frames=61)
