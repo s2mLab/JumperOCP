@@ -17,6 +17,8 @@ from biorbd_optim import (
     Data,
 )
 
+# TODO: No custom constraint 1 contact to 0 added here yet
+
 def from_2contacts_to_1(ocp, nlp, t, x, u, p):
     return ocp.nlp[0]["contact_forces_func"](x[0], u[0], p)[[2, 5], -1]
 
@@ -122,9 +124,9 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     )
 
     # Custom constraints for contact forces at transitions
-    constraints_second_phase.append(
-        {"type": Constraint.CUSTOM, "function": from_2contacts_to_1, "instant": Instant.START}
-    )
+    # constraints_second_phase.append(
+    #     {"type": Constraint.CUSTOM, "function": from_2contacts_to_1, "instant": Instant.START}
+    # )
 
     if not use_symmetry:
         first_dof = (3, 4, 7, 8, 9)
