@@ -104,24 +104,24 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
 
     # Non-slipping constraints
     # N.B.: Application on only one of the two feet is sufficient, as the slippage cannot occurs on only one foot.
-    constraints_first_phase.append(
-        {
-            "type": Constraint.NON_SLIPPING,
-            "instant": Instant.ALL,
-            "normal_component_idx": (1, 2),
-            "tangential_component_idx": 0,
-            "static_friction_coefficient": 0.5,
-        }
-    )
-    constraints_second_phase.append(
-        {
-            "type": Constraint.NON_SLIPPING,
-            "instant": Instant.ALL,
-            "normal_component_idx": 1,
-            "tangential_component_idx": 0,
-            "static_friction_coefficient": 0.5,
-        }
-    )
+    # constraints_first_phase.append(
+    #     {
+    #         "type": Constraint.NON_SLIPPING,
+    #         "instant": Instant.ALL,
+    #         "normal_component_idx": (1, 2),
+    #         "tangential_component_idx": 0,
+    #         "static_friction_coefficient": 0.5,
+    #     }
+    # )
+    # constraints_second_phase.append(
+    #     {
+    #         "type": Constraint.NON_SLIPPING,
+    #         "instant": Instant.ALL,
+    #         "normal_component_idx": 1,
+    #         "tangential_component_idx": 0,
+    #         "static_friction_coefficient": 0.5,
+    #     }
+    # )
 
     # Custom constraints for contact forces at transitions
     # constraints_second_phase.append(
@@ -150,8 +150,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
         constraints_first_phase,
         constraints_second_phase,
     )
-    # for i, constraints_phase in enumerate(constraints):
-    #     constraints_phase.append({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[i], "maximum": time_max[i]})
+    for i, constraints_phase in enumerate(constraints):
+        constraints_phase.append({"type": Constraint.TIME_CONSTRAINT, "minimum": time_min[i], "maximum": time_max[i]})
 
     # Path constraint
     if use_symmetry:
@@ -215,10 +215,10 @@ if __name__ == "__main__":
         "../models/jumper2contacts.bioMod",
         "../models/jumper1contacts.bioMod",
     )
-    time_min = [0.05, 0.1]
+    time_min = [0.05, 0.05]
     time_max = [0.5, 0.5]
     phase_time = [0.4, 0.2]
-    number_shooting_points = [20, 20]
+    number_shooting_points = [30, 30]
 
     tic = time()
     run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
