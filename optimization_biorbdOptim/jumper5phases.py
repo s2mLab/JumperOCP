@@ -1,3 +1,5 @@
+from time import time
+
 import biorbd
 
 from biorbd_optim import (
@@ -14,11 +16,13 @@ from biorbd_optim import (
     InitialConditions,
     ShowResult,
     Data,
+    PlotType,
 )
 
 # def constraint_2c_to_1c_transition(ocp, nlp, t, x, u, p):
 #     val = ocp.nlp[0]["contact_forces_func"](x[0], u[0], p)[[2, 5], -1]
 #     return val
+
 
 def from_2contacts_to_1(ocp, nlp, t, x, u, p):
     return ocp.nlp[0]["contact_forces_func"](x[0], u[0], p)[[2, 5], -1]
@@ -91,16 +95,16 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
         (),
         (
             {"type": Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, "weight": -1},
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
+            # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
         ),
         (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
+            # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
         ),
         (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
+            # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
         ),
         (
-            {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
+            # {"type": Objective.Lagrange.MINIMIZE_TORQUE, "weight": -1 / 100},
         ),
     )
 
@@ -297,14 +301,53 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     )
 
 
+def plot_CoM(x, model_path):
+    m = biorbd.Model(model_path)
+    q_mapping = BidirectionalMapping(
+        Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
+    )
+    q_reduced = x[:7, :]
+    q_expanded = q_mapping.expand.map(q_reduced)
+    from casadi import Function, MX
+    import numpy as np
+
+    q_sym = MX.sym("q", m.nbQ(), 1)
+    CoM_func = Function("Compute_CoM", [q_sym], [m.CoM(q_sym).to_mx()], ["q"], ["CoM"],).expand()
+    CoM = np.array(CoM_func(q_expanded[:, :]))
+    return CoM[2]
+
+
+def plot_CoM_dot(x, model_path):
+    m = biorbd.Model(model_path)
+    q_mapping = BidirectionalMapping(
+        Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
+    )
+    q_reduced = x[:7, :]
+    qdot_reduced = x[7:, :]
+    q_expanded = q_mapping.expand.map(q_reduced)
+    qdot_expanded = q_mapping.expand.map(qdot_reduced)
+    from casadi import Function, MX
+    import numpy as np
+
+    q_sym = MX.sym("q", m.nbQ(), 1)
+    qdot_sym = MX.sym("q_dot", m.nbQdot(), 1)
+    CoM_dot_func = Function(
+        "Compute_CoM_dot", [q_sym, qdot_sym], [m.CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
+    ).expand()
+    CoM_dot = np.array(CoM_dot_func(q_expanded[:, :], qdot_expanded[:, :]))
+    return CoM_dot[2]
+
+
 def run_and_save_ocp(model_path, phase_time, number_shooting_points):
     ocp = prepare_ocp(
         model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True
     )
-    # sol = ocp.solve(options_ipopt={"max_iter": 5}, show_online_optim=True)
-    sol = ocp.solve(options_ipopt={"hessian_approximation": "limited-memory"}, show_online_optim=True)
+    for i in range(len(model_path)):
+        ocp.add_plot("CoM", lambda x, u, p: plot_CoM(x, model_path[i]), phase_number=i, plot_type=PlotType.PLOT)
+        ocp.add_plot("CoM_dot", lambda x, u, p: plot_CoM_dot(x, model_path[i]), phase_number=i, plot_type=PlotType.PLOT)
+    sol = ocp.solve(options_ipopt={"hessian_approximation": "exact", "max_iter": 1000}, show_online_optim=True)
 
-    OptimalControlProgram.save(ocp, sol, "../Results/jumper5phases_sol")
+    OptimalControlProgram.save(ocp, sol, "../Results/jumper5phases_exact_sol")
 
 
 if __name__ == "__main__":
@@ -315,10 +358,12 @@ if __name__ == "__main__":
         "../models/jumper1contacts.bioMod",
         "../models/jumper2contacts.bioMod",
     )
-    time_min = [0.05, 0.1, 0.1, 0.05, 0.1]
-    time_max = [0.2, 0.2, 2, 0.4, 0.3]
-    phase_time = [0.2, 0.2, 1, 0.4, 0.3]
-    number_shooting_points = [10, 10, 20, 10, 10]
+    time_min = [0.1, 0.3, 0.2, 0.1, 0.1]
+    time_max = [0.4, 0.6, 2, 0.4, 0.4]
+    phase_time = [0.2, 0.4, 1, 0.3, 0.3]
+    number_shooting_points = [20, 20, 20, 20, 20]
+
+    tic = time()
 
     run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
     ocp, sol = OptimalControlProgram.load("../Results/jumper5phases_sol.bo")
@@ -331,6 +376,9 @@ if __name__ == "__main__":
     print(
         f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s, {param['time'][3, 0]}s and {param['time'][4, 0]}s."
     )
+
+    toc = time() - tic
+    print(f"Time to solve : {toc}sec")
 
     result = ShowResult(ocp, sol)
     result.graphs()

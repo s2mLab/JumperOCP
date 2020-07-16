@@ -1,6 +1,6 @@
 from copy import copy
 import biorbd
-import numpy as np 
+import numpy as np
 
 m = biorbd.Model("/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper2contacts.bioMod")
 
@@ -21,4 +21,3 @@ print(f"tau: {tau_no_root}")
 cs = m.getConstraints()
 b = m.ForwardDynamicsConstraintsDirect(q0, qdot, tau_no_root, cs).to_array()
 print(f"\nQddot: {b} \nForces: {cs.getForce().to_array()}")
-
