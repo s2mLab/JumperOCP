@@ -32,6 +32,25 @@ from biorbd_optim import (
 #     val = x[0][7:14]
 #     return val
 
+def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
+    from casadi import Function, MX
+    q_reduced = x[0][:nlp["nbQ"]]
+    qdot_reduced = x[0][nlp["nbQ"]:]
+
+    q_mapping = BidirectionalMapping(
+        Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
+    )
+    q_expanded = q_mapping.expand.map(q_reduced)
+    qdot_expanded = q_mapping.expand.map(qdot_reduced)
+
+    q_sym = MX.sym("q", q_expanded.size()[0], 1)
+    qdot_sym = MX.sym("q_dot", qdot_expanded.size()[0], 1)
+    CoM_dot_func = Function(
+        "Compute_CoM_dot", [q_sym, qdot_sym], [nlp["model"].CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
+    ).expand()
+    CoM_dot = CoM_dot_func(q_expanded, qdot_expanded)
+    return CoM_dot[2]
+
 
 def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=True, use_actuators=True):
     # --- Options --- #
@@ -137,7 +156,9 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     #     {"type": Constraint.CUSTOM, "function": from_2contacts_to_1, "instant": Instant.START}
     # )
 
-    # TODO: Make it works also with no symmetry
+    # Custom constraints for positivity of CoM_dot on z axis just before the take-off
+    constraints.add(CoM_dot_Z_last_node_positivity, phase=1, instant=Instant.END, min_bound=0, max_bound=np.inf)
+
     # if not use_symmetry:
     #     first_dof = (3, 4, 7, 8, 9)
     #     second_dof = (5, 6, 10, 11, 12)
