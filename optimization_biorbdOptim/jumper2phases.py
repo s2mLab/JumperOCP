@@ -1,5 +1,6 @@
 from time import time
 
+import numpy as np
 import biorbd
 
 from biorbd_optim import (
@@ -209,12 +210,15 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     # X_bounds = ProblemType.slicing_bounds("q", X_bounds)
     # q_bounds = X_bounds[0][:nq]
 
-    # Initial guess (Interpolation type is CONSTANT)
+    # Initial guess for states (Interpolation type is CONSTANT for 1st phase and SPLINE with 3 key positions for 2nd phase)
     x_init = InitialConditionsList()
-    for i in range(nb_phases):
-        x_init.add(pose_at_first_node + [0] * nb_qdot)
-
-    # X_init = [InitialConditions(pose_at_first_node + [0] * nb_qdot) for i in range(nb_phases)]
+    x_init.add(pose_at_first_node + [0] * nb_qdot)      # x_init phase 0 type CONSTANT
+    t_spline = np.hstack((0, 0.34, phase_time[1]))
+    p0 = np.array([pose_at_first_node + [0] * nb_qdot]).T
+    p_flex = np.array([[-0.12, -0.23, -1.10, 1.85, 2.06, -1.67, 0.55, 0, 0, 0, 0, 0, 0, 0]]).T
+    p_end = p0
+    key_positions = np.hstack((p0, p_flex, p_end))
+    x_init.add(key_positions, t=t_spline, interpolation=InterpolationType.SPLINE)       # x_init phase 1 type SPLINE
 
     # Define control path constraint (
     if use_actuators:
