@@ -72,13 +72,13 @@ def from_1contact_to_2(ocp, nlp, t, x, u, p):
 #     return val
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=True, use_actuators=True):
+def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=True, use_torque_activation=True):
     # --- Options --- #
     # Model path
     biorbd_model = [biorbd.Model(elt) for elt in model_path]
 
     nb_phases = len(biorbd_model)
-    if use_actuators:
+    if use_torque_activation:
         tau_min, tau_max, tau_init = -1, 1, 0
     else:
         tau_min, tau_max, tau_init = -500, 500, 0
@@ -106,7 +106,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
 
     # Dynamics
     dynamics = DynamicsTypeList()
-    if use_actuators:
+    if use_torque_activation:
         dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
         dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
         dynamics.add(DynamicsType.TORQUE_DRIVEN)
@@ -280,7 +280,7 @@ def plot_CoM_dot(x, model_path):
 
 def run_and_save_ocp(model_path, phase_time, number_shooting_points):
     ocp = prepare_ocp(
-        model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True, use_actuators=False
+        model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True, use_torque_activation=False
     )
     for i in range(len(model_path)):
         ocp.add_plot("CoM", lambda x, u, p: plot_CoM(x, model_path[i]), phase_number=i, plot_type=PlotType.PLOT)
@@ -288,9 +288,12 @@ def run_and_save_ocp(model_path, phase_time, number_shooting_points):
     sol = ocp.solve(solver_options={"hessian_approximation": "exact", "max_iter": 10000}, show_online_optim=True)
 
     OptimalControlProgram.save(ocp, sol, "../Results/jumper5phases_exact_sol")
+    return ocp, sol
 
 
 if __name__ == "__main__":
+    use_saved_results = True
+
     model_path = (
         "../models/jumper2contacts.bioMod",
         "../models/jumper1contacts.bioMod",
@@ -305,13 +308,12 @@ if __name__ == "__main__":
 
     tic = time()
 
-    run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
-    ocp, sol = OptimalControlProgram.load("../Results/jumper5phases_sol.bo")
+    if use_saved_results:
+        ocp, sol = OptimalControlProgram.load("../Results/jumper5phases_exact_sol.bo")
+    else:
+        ocp, sol = run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
 
-    # ocp = prepare_ocp(model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True)
-    # sol = ocp.solve(show_online_optim=False, options_ipopt={"hessian_approximation": "limited-memory", "max_iter": 2})
-
-    # --- Show results --- #
+    # # --- Show results --- #
     # param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
     # print(
     #     f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s, {param['time'][3, 0]}s and {param['time'][4, 0]}s."
