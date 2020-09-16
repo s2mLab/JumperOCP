@@ -2,7 +2,7 @@ from copy import copy
 import biorbd
 import numpy as np
 
-m = biorbd.Model("/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper2contacts.bioMod")
+m = biorbd.Model("../models/jumper2contacts.bioMod")
 
 q0 = np.array([0, 0, -0.5336, 0, 1.4, 0, 1.4, 0.8, -0.9, 0.47, 0.8, -0.9, 0.47])
 qdot = np.zeros((13,))

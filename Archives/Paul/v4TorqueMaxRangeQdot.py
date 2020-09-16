@@ -26,7 +26,7 @@ def computeTorqueMaxAndForces(q, qdot):
 	print("\n\n")
 """
 
-m = biorbd.Model("/home/iornaith/Documents/GitKraken/JumperOCP/models/jumper2contacts.bioMod")
+m = biorbd.Model("../models/jumper2contacts.bioMod")
 
 q0 = np.array([0, 0, -0.5336, 0, 1.4, 0, 1.4, 0.8, -0.9, 0.47, 0.8, -0.9, 0.47])
 q1 = np.array([-0.12, -0.23, -1.10, 0, 1.85, 0, 1.85, 2.06, -1.67, 0.55, 2.06, -1.67, 0.55])
