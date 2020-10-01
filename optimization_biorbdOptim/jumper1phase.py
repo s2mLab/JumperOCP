@@ -3,7 +3,7 @@ from time import time
 import numpy as np
 import biorbd
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     ConstraintList,
@@ -35,8 +35,8 @@ from biorbd_optim import (
 
 def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     from casadi import Function, MX
-    q_reduced = x[0][:nlp["nbQ"]]
-    qdot_reduced = x[0][nlp["nbQ"]:]
+    q_reduced = x[0][:nlp.shape["q"]]
+    qdot_reduced = x[0][nlp.shape["q"]:]
 
     q_mapping = BidirectionalMapping(
         Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
@@ -266,7 +266,7 @@ if __name__ == "__main__":
         phase_time=phase_time,
         number_shooting_points=number_shooting_points,
         use_symmetry=True,
-        use_actuators=True,
+        use_actuators=False,
     )
     ocp.add_plot(
         "CoM", lambda x, u, p: plot_CoM(x, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.PLOT
