@@ -161,12 +161,12 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     x_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
 
     # # Initial guess for states (Interpolation type is CONSTANT)
-    # x_init = InitialConditionsList()
+    # x_init = InitialGuessList()
     # for i in range(nb_phases):
     #     x_init.add(pose_at_first_node + [0] * nb_qdot)
 
     # Initial guess for states (Interpolation type is CONSTANT for 1st phase and SPLINE with 3 key positions for 2nd phase)
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     t_spline = np.hstack((0, 0.34, phase_time))
     p0 = np.array([pose_at_first_node + [0] * nb_qdot]).T
     p_flex = np.array([[-0.12, -0.23, -1.10, 1.85, 2.06, -1.67, 0.55, 0, 0, 0, 0, 0, 0, 0]]).T
@@ -178,7 +178,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     u_bounds = BoundsList()
     u_bounds.add([[tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len], interpolation=InterpolationType.CONSTANT)    # This precision of the CONSTANT type is for informative purposes only
 
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     u_init.add([tau_init] * tau_mapping.reduce.len)     # Interpolation type is CONSTANT (default value)
 
     # ------------- #

@@ -4,7 +4,7 @@ import numpy as np
 import biorbd
 from casadi import Function, MX
 
-from biorbd_optim import (
+from bioptim import (
     Instant,
     OptimalControlProgram,
     Constraint,
@@ -19,7 +19,7 @@ from biorbd_optim import (
     StateTransitionList,
     BoundsList,
     QAndQDotBounds,
-    InitialConditionsList,
+    InitialGuessList,
     InterpolationType,
     ShowResult,
     Data,
@@ -196,12 +196,12 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     x_bounds[4].max[:, -1] = pose_at_first_node + [0] * nb_qdot
 
     # # Initial guess for states (Interpolation type is CONSTANT)
-    # x_init = InitialConditionsList()
+    # x_init = InitialGuessList()
     # for i in range(nb_phases):
     #     x_init.add(pose_at_first_node + [0] * nb_qdot)
 
     # Initial guess for states (Interpolation type is CONSTANT all phases except the SPLINE type with 3 key positions for 2nd phase)
-    x_init = InitialConditionsList()
+    x_init = InitialGuessList()
     x_init.add(pose_at_first_node + [0] * nb_qdot)  # x_init phase 0 type CONSTANT
     t_spline = np.hstack((0, 0.34, phase_time[1]))
     p0 = np.array([pose_at_first_node + [0] * nb_qdot]).T
@@ -219,7 +219,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
         u_bounds.add([[tau_min] * tau_m.reduce.len, [tau_max] * tau_m.reduce.len], interpolation=InterpolationType.CONSTANT)  # This precision of the CONSTANT type is for informative purposes only
 
     # Define initial guess for controls
-    u_init = InitialConditionsList()
+    u_init = InitialGuessList()
     for tau_m in tau_mapping:
         u_init.add([tau_init] * tau_m.reduce.len)  # Interpolation type is CONSTANT (default value)
 
