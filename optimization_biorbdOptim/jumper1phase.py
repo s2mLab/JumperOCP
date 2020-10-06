@@ -47,7 +47,7 @@ def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     q_sym = MX.sym("q", q_expanded.size()[0], 1)
     qdot_sym = MX.sym("q_dot", qdot_expanded.size()[0], 1)
     CoM_dot_func = Function(
-        "Compute_CoM_dot", [q_sym, qdot_sym], [nlp["model"].CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
+        "Compute_CoM_dot", [q_sym, qdot_sym], [nlp.model.CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
     ).expand()
     CoM_dot = CoM_dot_func(q_expanded, qdot_expanded)
     return CoM_dot[2]
@@ -140,8 +140,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     # )
 
     # # Time constraint
-    # for i in range(nb_phases):
-    #     constraints.add(Constraint.TIME_CONSTRAINT, phase=i, minimum=time_min[i], maximum=time_max[i])
+    for i in range(nb_phases):
+        constraints.add(Constraint.TIME_CONSTRAINT, phase=i, minimum=time_min[i], maximum=time_max[i])
 
     # --- Path constraints --- #
     if use_symmetry:
@@ -252,8 +252,8 @@ if __name__ == "__main__":
     model_path = (
         "../models/jumper2contacts.bioMod",
     )
-    # time_min = 0.2
-    # time_max = 1
+    time_min = [0.2]
+    time_max = [1]
     phase_time = 0.4
     number_shooting_points = 30
 
