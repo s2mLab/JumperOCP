@@ -253,7 +253,7 @@ def plot_surface(model):
             ["Q", "Qdot"],
             ["Tau"])
 
-    torque_min_func = Function(
+    torque_neg_func = Function(
             "torque_func",
             [q_sym, qdot_sym],
             [model.torqueMax(q_sym, qdot_sym)[1].to_mx()],
@@ -263,31 +263,31 @@ def plot_surface(model):
     q = np.arange(-0.4, 2.6, 0.03)
     qdot = np.arange(-10, 8, 0.18)
     tau_pos = np.zeros((100, 100))
-    tau_min = np.zeros((100, 100))
+    tau_neg = np.zeros((100, 100))
     for i in range(100):
         for j in range(100):
             tau_pos[i, j] = torque_pos_func(np.ones(13) * q[i], np.ones(13) * qdot[j]).__array__()[7]
-            tau_min[i, j] = torque_min_func(np.ones(13) * q[i], np.ones(13) * qdot[j]).__array__()[7]
+            tau_neg[i, j] = torque_neg_func(np.ones(13) * q[i], np.ones(13) * qdot[j]).__array__()[7]
 
 
     fig_pos = plt.figure()
-    fig_min = plt.figure()
+    fig_neg = plt.figure()
 
-    ax_min = fig_min.gca(projection='3d')
+    ax_neg = fig_neg.gca(projection='3d')
     ax_pos = fig_pos.gca(projection='3d')
 
     q, qdot = np.meshgrid(q, qdot)
 
     ax_pos.plot_surface(q, qdot, tau_pos)
-    ax_min.plot_surface(q, qdot, tau_min)
+    ax_neg.plot_surface(q, qdot, tau_neg)
 
     ax_pos.set_xlabel('Q', fontsize=15)
     ax_pos.set_ylabel('Qdot', fontsize=15)
     ax_pos.set_zlabel('Tau', fontsize=15)
 
-    ax_min.set_xlabel('Q', fontsize=15)
-    ax_min.set_ylabel('Qdot', fontsize=15)
-    ax_min.set_zlabel('Tau', fontsize=15)
+    ax_neg.set_xlabel('Q', fontsize=15)
+    ax_neg.set_ylabel('Qdot', fontsize=15)
+    ax_neg.set_zlabel('Tau', fontsize=15)
     plt.show()
 
 
