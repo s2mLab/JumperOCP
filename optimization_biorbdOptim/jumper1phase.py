@@ -11,6 +11,7 @@ from bioptim import (
     Objective,
     ObjectiveList,
     DynamicsTypeList,
+    DynamicsFunctions,
     DynamicsType,
     BidirectionalMapping,
     Mapping,
@@ -86,6 +87,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1, phase=0)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=0.1, phase=0)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -140,8 +142,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     # )
 
     # # Time constraint
-    for i in range(nb_phases):
-        constraints.add(Constraint.TIME_CONSTRAINT, phase=i, minimum=time_min[i], maximum=time_max[i])
+    # for i in range(nb_phases):
+    #     constraints.add(Constraint.TIME_CONSTRAINT, phase=i, minimum=time_min[i], maximum=time_max[i])
 
     # --- Path constraints --- #
     if use_symmetry:
@@ -236,6 +238,58 @@ def plot_CoM_dot(x, model_path):
     ).expand()
     CoM_dot = np.array(CoM_dot_func(q_expanded[:, :], qdot_expanded[:, :]))
     return CoM_dot[2]
+
+
+def plot_surface(model):
+    from casadi import Function, MX
+    import numpy as np
+
+    q_sym = MX.sym("q", model.nbQ(), 1)
+    qdot_sym = MX.sym("q_dot", model.nbQdot(), 1)
+    torque_pos_func = Function(
+            "torque_func",
+            [q_sym, qdot_sym],
+            [model.torqueMax(q_sym, qdot_sym)[0].to_mx()],
+            ["Q", "Qdot"],
+            ["Tau"])
+
+    torque_min_func = Function(
+            "torque_func",
+            [q_sym, qdot_sym],
+            [model.torqueMax(q_sym, qdot_sym)[1].to_mx()],
+            ["Q", "Qdot"],
+            ["Tau"])
+
+    q = np.arange(-0.4, 2.6, 0.03)
+    qdot = np.arange(-10, 8, 0.18)
+    tau_pos = np.zeros((100, 100))
+    tau_min = np.zeros((100, 100))
+    for i in range(100):
+        for j in range(100):
+            tau_pos[i, j] = torque_pos_func(np.ones(13) * q[i], np.ones(13) * qdot[j]).__array__()[7]
+            tau_min[i, j] = torque_min_func(np.ones(13) * q[i], np.ones(13) * qdot[j]).__array__()[7]
+
+
+    fig_pos = plt.figure()
+    fig_min = plt.figure()
+
+    ax_min = fig_min.gca(projection='3d')
+    ax_pos = fig_pos.gca(projection='3d')
+
+    q, qdot = np.meshgrid(q, qdot)
+
+    ax_pos.plot_surface(q, qdot, tau_pos)
+    ax_min.plot_surface(q, qdot, tau_min)
+
+    ax_pos.set_xlabel('Q', fontsize=15)
+    ax_pos.set_ylabel('Qdot', fontsize=15)
+    ax_pos.set_zlabel('Tau', fontsize=15)
+
+    ax_min.set_xlabel('Q', fontsize=15)
+    ax_min.set_ylabel('Qdot', fontsize=15)
+    ax_min.set_zlabel('Tau', fontsize=15)
+    plt.show()
+
 
 
 # def run_and_save_ocp(model_path, phase_time, number_shooting_points):
