@@ -1,4 +1,5 @@
 from time import time
+import matplotlib.pyplot as plt
 
 import numpy as np
 import biorbd
@@ -34,10 +35,12 @@ from bioptim import (
 #     val = x[0][7:14]
 #     return val
 
+
 def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     from casadi import Function, MX
-    q_reduced = x[0][:nlp.shape["q"]]
-    qdot_reduced = x[0][nlp.shape["q"]:]
+
+    q_reduced = x[0][: nlp.shape["q"]]
+    qdot_reduced = x[0][nlp.shape["q"] :]
 
     q_mapping = BidirectionalMapping(
         Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
@@ -48,12 +51,14 @@ def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     q_sym = MX.sym("q", q_expanded.size()[0], 1)
     qdot_sym = MX.sym("q_dot", qdot_expanded.size()[0], 1)
     CoM_dot_func = Function(
-        "Compute_CoM_dot", [q_sym, qdot_sym], [nlp.model.CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
+        "Compute_CoM_dot",
+        [q_sym, qdot_sym],
+        [nlp.model.CoMdot(q_sym, qdot_sym).to_mx()],
+        ["q", "q_dot"],
+        ["CoM_dot"],
     ).expand()
     CoM_dot = CoM_dot_func(q_expanded, qdot_expanded)
     return CoM_dot[2]
-
-
 
 
 def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=True, use_actuators=True):
@@ -102,11 +107,25 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     # Positivity constraints of the normal component of the reaction forces
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
-        constraints.add(Constraint.CONTACT_FORCE_INEQUALITY, phase=0, direction="GREATER_THAN", instant=Instant.ALL, contact_force_idx=i, boundary=0)
+        constraints.add(
+            Constraint.CONTACT_FORCE_INEQUALITY,
+            phase=0,
+            direction="GREATER_THAN",
+            instant=Instant.ALL,
+            contact_force_idx=i,
+            boundary=0,
+        )
 
     # Non-slipping constraints
     # N.B.: Application on only one of the two feet is sufficient, as the slippage cannot occurs on only one foot.
-    constraints.add(Constraint.NON_SLIPPING, phase=0, instant=Instant.ALL, normal_component_idx=(1, 2), tangential_component_idx=0, static_friction_coefficient=0.5)
+    constraints.add(
+        Constraint.NON_SLIPPING,
+        phase=0,
+        instant=Instant.ALL,
+        normal_component_idx=(1, 2),
+        tangential_component_idx=0,
+        static_friction_coefficient=0.5,
+    )
 
     # Custom constraints for contact forces at transitions
     # constraints_second_phase.append(
@@ -174,14 +193,17 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     p_flex = np.array([[-0.12, -0.23, -1.10, 1.85, 2.06, -1.67, 0.55, 0, 0, 0, 0, 0, 0, 0]]).T
     p_end = p0
     key_positions = np.hstack((p0, p_flex, p_end))
-    x_init.add(key_positions, t=t_spline, interpolation=InterpolationType.SPLINE)       # x_init phase 1 type SPLINE
+    x_init.add(key_positions, t=t_spline, interpolation=InterpolationType.SPLINE)  # x_init phase 1 type SPLINE
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add([[tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len], interpolation=InterpolationType.CONSTANT)    # This precision of the CONSTANT type is for informative purposes only
+    u_bounds.add(
+        [[tau_min] * tau_mapping.reduce.len, [tau_max] * tau_mapping.reduce.len],
+        interpolation=InterpolationType.CONSTANT,
+    )  # This precision of the CONSTANT type is for informative purposes only
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * tau_mapping.reduce.len)     # Interpolation type is CONSTANT (default value)
+    u_init.add([tau_init] * tau_mapping.reduce.len)  # Interpolation type is CONSTANT (default value)
 
     # ------------- #
 
@@ -214,7 +236,13 @@ def plot_CoM(x, model_path):
     import numpy as np
 
     q_sym = MX.sym("q", m.nbQ(), 1)
-    CoM_func = Function("Compute_CoM", [q_sym], [m.CoM(q_sym).to_mx()], ["q"], ["CoM"],).expand()
+    CoM_func = Function(
+        "Compute_CoM",
+        [q_sym],
+        [m.CoM(q_sym).to_mx()],
+        ["q"],
+        ["CoM"],
+    ).expand()
     CoM = np.array(CoM_func(q_expanded[:, :]))
     return CoM[2]
 
@@ -234,18 +262,26 @@ def plot_CoM_dot(x, model_path):
     q_sym = MX.sym("q", m.nbQ(), 1)
     qdot_sym = MX.sym("q_dot", m.nbQdot(), 1)
     CoM_dot_func = Function(
-        "Compute_CoM_dot", [q_sym, qdot_sym], [m.CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
+        "Compute_CoM_dot",
+        [q_sym, qdot_sym],
+        [m.CoMdot(q_sym, qdot_sym).to_mx()],
+        ["q", "q_dot"],
+        ["CoM_dot"],
     ).expand()
     CoM_dot = np.array(CoM_dot_func(q_expanded[:, :], qdot_expanded[:, :]))
     return CoM_dot[2]
 
 
-def plot_surface(model):
+def plot_surface(model, dof):
     from casadi import Function, MX
     import numpy as np
 
-    q_sym = MX.sym("q", model.nbQ(), 1)
-    qdot_sym = MX.sym("q_dot", model.nbQdot(), 1)
+    min_bounds = QAndQDotBounds(model)[:].min
+    max_bounds = QAndQDotBounds(model)[:].max
+    nbq = model.nbQ()
+
+    q_sym = MX.sym("q", nbq, 1)
+    qdot_sym = MX.sym("q_dot", nbq, 1)
     torque_pos_func = Function(
             "torque_func",
             [q_sym, qdot_sym],
@@ -253,43 +289,45 @@ def plot_surface(model):
             ["Q", "Qdot"],
             ["Tau"])
 
-    torque_neg_func = Function(
+    torque_min_func = Function(
             "torque_func",
             [q_sym, qdot_sym],
             [model.torqueMax(q_sym, qdot_sym)[1].to_mx()],
             ["Q", "Qdot"],
             ["Tau"])
 
-    q = np.arange(-0.4, 2.6, 0.03)
-    qdot = np.arange(-10, 8, 0.18)
+    q = np.arange(min_bounds[dof][0], max_bounds[dof][0], round(max_bounds[dof][0] - min_bounds[dof][0], 10) / 100)
+    qdot = np.arange(min_bounds[dof + nbq][0], max_bounds[dof + nbq][0], round(max_bounds[dof + nbq][0] - min_bounds[dof + nbq][0], 10) / 100)
+
     tau_pos = np.zeros((100, 100))
-    tau_neg = np.zeros((100, 100))
+    tau_min = np.zeros((100, 100))
+
     for i in range(100):
         for j in range(100):
-            tau_pos[i, j] = torque_pos_func(np.ones(13) * q[i], np.ones(13) * qdot[j]).__array__()[7]
-            tau_neg[i, j] = torque_neg_func(np.ones(13) * q[i], np.ones(13) * qdot[j]).__array__()[7]
+            tau_pos[i, j] = torque_pos_func(np.ones(nbq) * q[i], np.ones(nbq) * qdot[j]).__array__()[dof]
+            tau_min[i, j] = torque_min_func(np.ones(nbq) * q[i], np.ones(nbq) * qdot[j]).__array__()[dof]
 
 
     fig_pos = plt.figure()
-    fig_neg = plt.figure()
+    fig_min = plt.figure()
 
-    ax_neg = fig_neg.gca(projection='3d')
+    ax_min = fig_min.gca(projection='3d')
     ax_pos = fig_pos.gca(projection='3d')
 
     q, qdot = np.meshgrid(q, qdot)
 
     ax_pos.plot_surface(q, qdot, tau_pos)
-    ax_neg.plot_surface(q, qdot, tau_neg)
+    ax_min.plot_surface(q, qdot, tau_min)
 
-    ax_pos.set_xlabel('Q', fontsize=15)
-    ax_pos.set_ylabel('Qdot', fontsize=15)
+    ax_pos.set_xlabel('Qdot', fontsize=15)
+    ax_pos.set_ylabel('Q', fontsize=15)
     ax_pos.set_zlabel('Tau', fontsize=15)
 
-    ax_neg.set_xlabel('Q', fontsize=15)
-    ax_neg.set_ylabel('Qdot', fontsize=15)
-    ax_neg.set_zlabel('Tau', fontsize=15)
-    plt.show()
+    ax_min.set_xlabel('Qdot', fontsize=15)
+    ax_min.set_ylabel('Q', fontsize=15)
+    ax_min.set_zlabel('Tau', fontsize=15)
 
+    plt.show()
 
 
 # def run_and_save_ocp(model_path, phase_time, number_shooting_points):
@@ -303,9 +341,10 @@ def plot_surface(model):
 
 
 if __name__ == "__main__":
-    model_path = (
-        "../models/jumper2contacts.bioMod",
-    )
+    # plot_surface(biorbd.Model("../models/jumper2contacts.bioMod"), 7)
+    # plot_surface(biorbd.Model("../models/jumper2contacts.bioMod"), 8)
+    # plot_surface(biorbd.Model("../models/jumper2contacts.bioMod"), 9)
+    model_path = ("../models/jumper2contacts.bioMod",)
     time_min = [0.2]
     time_max = [1]
     phase_time = 0.4
@@ -320,11 +359,9 @@ if __name__ == "__main__":
         phase_time=phase_time,
         number_shooting_points=number_shooting_points,
         use_symmetry=True,
-        use_actuators=False,
+        use_actuators=True,
     )
-    ocp.add_plot(
-        "CoM", lambda x, u, p: plot_CoM(x, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.PLOT
-    )
+    ocp.add_plot("CoM", lambda x, u, p: plot_CoM(x, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.PLOT)
     ocp.add_plot(
         "CoM_dot",
         lambda x, u, p: plot_CoM_dot(x, "../models/jumper2contacts.bioMod"),
