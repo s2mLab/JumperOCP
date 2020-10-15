@@ -412,9 +412,9 @@ external_forces 0
             T0	    467.857298
             wmax	562.500000
             wc	    225.000000
-            amin	0.500000
+            amin	0.8797
             wr	    40.000000
-            w1	    -78.046135
+            w1	    14.7954
             qopt	85.510899
             r	    -67.744985
         endactuator
@@ -455,14 +455,14 @@ external_forces 0
             type    Gauss3p
             dof     RotX
             direction    positive
-            Tmax	385.101300
+            Tmax	367.7
             T0	    275.072368
             wmax	1437.500000
             wc	    575.000000
             amin	0.990000
             wr	    40.000000
             w1	    -89.999999
-            qopt	-63.850357
+            qopt	61.7
             r	    -31.721902
         endactuator
         actuator    JambeD
@@ -476,7 +476,7 @@ external_forces 0
             amin	0.990000
             wr	    40.000000
             w1	    -90.000000
-            qopt	-35.508215
+            qopt	35.508215
             r	    54.590448
         endactuator
 
@@ -548,7 +548,7 @@ external_forces 0
             dof     RotX
             direction    positive
             Tmax	53.822999
-            T0	    38.331862
+            T0	    37.2
             wmax	2375.000000
             wc	    375.000000
             amin	0.910290
@@ -562,14 +562,14 @@ external_forces 0
             dof     RotX
             direction    negative
             Tmax	257.854740
-            T0	    168.214981
+            T0	    175.0
             wmax	2000.000000
             wc	    800.000000
-            amin	0.782747
-            wr	    90.000000
-            w1	    -53.230301
+            amin	0.9
+            wr	    40.000000
+            w1	    56.4
             qopt	30.550320
-            r	    34.514038
+            r	    33.6
         endactuator
 
 
@@ -625,9 +625,9 @@ external_forces 0
             T0	    467.857298
             wmax	562.500000
             wc	    225.000000
-            amin	0.500000
+            amin	0.8797
             wr	    40.000000
-            w1	    -78.046135
+            w1	    14.7954
             qopt	85.510899
             r	    -67.744985
         endactuator
@@ -669,14 +669,14 @@ external_forces 0
             type    Gauss3p
             dof     RotX
             direction    positive
-            Tmax	385.101300
+            Tmax	367.7
             T0	    275.072368
             wmax	1437.500000
             wc	    575.000000
             amin	0.990000
             wr	    40.000000
             w1	    -89.999999
-            qopt	-63.850357
+            qopt	61.7
             r	    -31.721902
         endactuator
         actuator    JambeG
@@ -690,7 +690,7 @@ external_forces 0
             amin	0.990000
             wr	    40.000000
             w1	    -90.000000
-            qopt	-35.508215
+            qopt	35.508215
             r	    54.590448
         endactuator
 
@@ -764,7 +764,7 @@ external_forces 0
             dof     RotX
             direction    positive
             Tmax	53.822999
-            T0	    38.331862
+            T0	    37.2
             wmax	2375.000000
             wc	    375.000000
             amin	0.910290
@@ -778,14 +778,13 @@ external_forces 0
             dof     RotX
             direction    negative
             Tmax	257.854740
-            T0	    168.214981
+            T0	    175.0
             wmax	2000.000000
             wc	    800.000000
-            amin	0.782747
-            wr	    90.000000
-            w1	    -53.230301
+            amin	0.9
+            wr	    40.000000
+            w1	    56.4
             qopt	30.550320
-            r	    34.514038
+            r	    33.6
         endactuator
-
 
