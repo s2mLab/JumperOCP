@@ -397,7 +397,7 @@ external_forces 0
             dof     RotX
             direction    negative
             Tmax    490.5938
-            T       387.3109
+            T0      387.3109
             wmax    562.5000
             wc      225.0000
             amin    0.9692
@@ -610,7 +610,7 @@ external_forces 0
             dof     RotX
             direction    negative
             Tmax    490.5938
-            T       387.3109
+            T0      387.3109
             wmax    562.5000
             wc      225.0000
             amin    0.9692
