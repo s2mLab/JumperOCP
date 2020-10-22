@@ -1,18 +1,16 @@
-version    3
-
-// General informations
-root_actuated 0
-external_forces 0
-
-
+version   4
 
 // Informations about Pelvis segment
     // Segment
     segment    Pelvis
         translations yz
         rotations    x
-	    rangesQ -10 10 -10 10 -30 30
-	    rangesQdot -20 20 -20 20 -15 15
+        rangesQ -10 10 
+                -10 10 
+                -30 30
+        rangesQdot -20 20 
+                   -20 20 
+                   -15 15
         mass    9.03529
         inertia
             0.04664    0.00000    0.00000
@@ -164,8 +162,10 @@ external_forces 0
             0.00000    0.00000    1.00000    0.30485
             0.00000    0.00000    0.00000    1.00000
         rotations    zx
-	    rangesQ -0.1 0.1 -1.7 3.1
-	    rangesQdot -17 13 -17 17
+	rangesQ -0.1 0.1 
+                -1.7 3.1
+	rangesQdot -17 13 
+                   -17 17
         mass    2.39085
         inertia
             0.06873    0.00000    0.00000
@@ -261,8 +261,10 @@ external_forces 0
             0.00000    0.00000    1.00000    0.30485
             0.00000    0.00000    0.00000    1.00000
         rotations    zx
-	    rangesQ -0.1 0.1 -1.7 3.1
-	    rangesQdot -17 13 -17 17
+        rangesQ -0.1 0.1 
+                -1.7 3.1
+        rangesQdot -17 13 
+                   -17 17
         mass    2.39085
         inertia
             0.06873    0.00000    0.00000
@@ -343,8 +345,8 @@ external_forces 0
             r       103.9095
             qopt    -101.6627
         endactuator
-        
-        
+
+
 // Informations about CuisseD segment
     // Segment
     segment    CuisseD
@@ -356,8 +358,8 @@ external_forces 0
             0.00000    0.00000    1.00000    -0.09895
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-	    rangesQ -0.4 2.6
-	    rangesQdot -10 8
+        rangesQ -0.4 2.6
+        rangesQdot -10 8
         mass    6.62882
         inertia
             0.07790    0.00000    0.00000
@@ -420,8 +422,8 @@ external_forces 0
             0.00000    0.00000    1.00000    -0.38304
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-	    rangesQ -2.3 -0.05
-	    rangesQdot -13 20
+        rangesQ -2.3 -0.05
+        rangesQdot -13 20
         mass    3.40206
         inertia
             0.04318    0.00000    0.00000
@@ -480,8 +482,8 @@ external_forces 0
             0.00000    0.00000    1.00000    -0.33859
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-	    rangesQ -1 0.7
-	    rangesQdot -17 17
+        rangesQ -1 0.7
+        rangesQdot -17 17
         mass    0.77311
         inertia
             0.00194    0.00000    0.00000
@@ -578,8 +580,8 @@ external_forces 0
             0.00000    0.00000    1.00000    -0.09895
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-	    rangesQ -0.4 2.6
-	    rangesQdot -10 8
+        rangesQ -0.4 2.6
+        rangesQdot -10 8
         mass    6.62882
         inertia
             0.07790    0.00000    0.00000
@@ -639,8 +641,8 @@ external_forces 0
             0.00000    0.00000    1.00000    -0.38304
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-	    rangesQ -2.3 -0.05
-	    rangesQdot -13 20
+        rangesQ -2.3 -0.05
+        rangesQdot -13 20
         mass    3.40206
         inertia
             0.04318    0.00000    0.00000
@@ -689,6 +691,7 @@ external_forces 0
 
 
 
+
 // Informations about PiedG segment
     // Segment
     segment    PiedG
@@ -700,8 +703,8 @@ external_forces 0
             0.00000    0.00000    1.00000    -0.33859
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-	    rangesQ -1 0.7
-	    rangesQdot -17 17
+        rangesQ -1 0.7
+        rangesQdot -17 17
         mass    0.77311
         inertia
             0.00194    0.00000    0.00000
@@ -779,3 +782,4 @@ external_forces 0
             r       21.8717
             qopt    12.6824
         endactuator
+
