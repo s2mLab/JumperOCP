@@ -162,9 +162,9 @@ version   4
             0.00000    0.00000    1.00000    0.30485
             0.00000    0.00000    0.00000    1.00000
         rotations    zx
-	rangesQ -0.1 0.1 
+        rangesQ -0.1 0.1 
                 -1.7 3.1
-	rangesQdot -17 13 
+        rangesQdot -17 13 
                    -17 17
         mass    2.39085
         inertia
@@ -688,7 +688,6 @@ version   4
             r       57.0370
             qopt    -33.2908
         endactuator
-
 
 
 
