@@ -163,7 +163,7 @@ version   4
             0.00000    0.00000    0.00000    1.00000
         rotations    zx
         rangesQ -0.1 0.1 
-                -1.7 3.1
+                -0.7 3.1
         rangesQdot -17 13 
                    -17 17
         mass    2.39085
@@ -262,7 +262,7 @@ version   4
             0.00000    0.00000    0.00000    1.00000
         rotations    zx
         rangesQ -0.1 0.1 
-                -1.7 3.1
+                -0.7 3.1
         rangesQdot -17 13 
                    -17 17
         mass    2.39085
@@ -422,7 +422,7 @@ version   4
             0.00000    0.00000    1.00000    -0.38304
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-        rangesQ -2.3 -0.05
+        rangesQ -2.3 -0.02
         rangesQdot -13 20
         mass    3.40206
         inertia
@@ -636,7 +636,7 @@ version   4
             0.00000    0.00000    1.00000    -0.38304
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-        rangesQ -2.3 -0.05
+        rangesQ -2.3 -0.02
         rangesQdot -13 20
         mass    3.40206
         inertia
