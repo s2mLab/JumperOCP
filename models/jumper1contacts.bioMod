@@ -25,7 +25,7 @@ version   4
         mesh   -0.1432   -0.0024    0.0344
         mesh   -0.1038    0.0821         0
     endsegment
-    
+
 
     // Actuator
         actuator    Pelvis
@@ -163,7 +163,7 @@ version   4
             0.00000    0.00000    0.00000    1.00000
         rotations    zx
         rangesQ -0.1 0.1 
-                -0.7 3.1
+                -1.7 3.1
         rangesQdot -17 13 
                    -17 17
         mass    2.39085
@@ -219,32 +219,24 @@ version   4
             Tmax    15
         endactuator
         actuator    BrasD
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    positive
-            Tmax    112.8107
-            T0      89.0611
-            wmax    1000.0000
-            wc      400.0000
-            amin    0.8780
-            wr      40.0000
-            w1      -6.2750
-            r       109.6679
-            qopt    -41.0307
+            theta		142.548257
+            lambda		0.005682
+            offset		13.075740
+            r		109.667917
+            qopt		-41.030719
         endactuator
         actuator    BrasD
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    negative
-            Tmax    162.7655
-            T0      128.4991
-            wmax    812.5000
-            wc      325.0000
-            amin    0.9678
-            wr      40.0000
-            w1      -90.0000
-            r       103.9095
-            qopt    -101.6627
+            theta		-194.430828
+            lambda		-0.008900
+            offset		225.392409
+            r		103.909513
+            qopt		-101.662666
         endactuator
         
 
@@ -262,7 +254,7 @@ version   4
             0.00000    0.00000    0.00000    1.00000
         rotations    zx
         rangesQ -0.1 0.1 
-                -0.7 3.1
+                -1.7 3.1
         rangesQdot -17 13 
                    -17 17
         mass    2.39085
@@ -318,34 +310,25 @@ version   4
             Tmax    15
         endactuator
         actuator    BrasG
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    positive
-            Tmax    112.8107
-            T0      89.0611
-            wmax    1000.0000
-            wc      400.0000
-            amin    0.8780
-            wr      40.0000
-            w1      -6.2750
-            r       109.6679
-            qopt    -41.0307
+            theta		142.548257
+            lambda		0.005682
+            offset		13.075740
+            r		109.667917
+            qopt		-41.030719
         endactuator
         actuator    BrasG
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    negative
-            Tmax    162.7655
-            T0      128.4991
-            wmax    812.5000
-            wc      325.0000
-            amin    0.9678
-            wr      40.0000
-            w1      -90.0000
-            r       103.9095
-            qopt    -101.6627
+            theta		-194.430828
+            lambda		-0.008900
+            offset		225.392409
+            r		103.909513
+            qopt		-101.662666
         endactuator
-
 
 // Informations about CuisseD segment
     // Segment
@@ -381,32 +364,24 @@ version   4
 
     // Actuator
         actuator    CuisseD
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction   positive
-            Tmax    220.3831
-            T0      157.4165
-            wmax    475.0000
-            wc      190.0000
-            amin    0.9900
-            wr      40.0000
-            w1      -90.0000
-            r       56.4021
-            qopt    25.6939
+            theta		312.078085
+            lambda		0.010016
+            offset		3.270290
+            r		56.402113
+            qopt		-25.693944
         endactuator
         actuator    CuisseD
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    negative
-            Tmax    490.5938
-            T0      387.3109
-            wmax    562.5000
-            wc      225.0000
-            amin    0.9692
-            wr      40.0000
-            w1      -90.0000
-            r       48.6999
-            qopt    72.5836
+            theta		707.492737
+            lambda		0.008767
+            offset		23.802572
+            r		48.699871
+            qopt		-72.583558
         endactuator
 
 
@@ -422,7 +397,7 @@ version   4
             0.00000    0.00000    1.00000    -0.38304
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-        rangesQ -2.3 -0.02
+        rangesQ -2.3 -0.05
         rangesQdot -13 20
         mass    3.40206
         inertia
@@ -442,32 +417,24 @@ version   4
 
     // Actuator
         actuator    JambeD
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    positive
-            Tmax    367.6643
-            T0      275.0726
-            wmax    1437.5000
-            wc      575.0000
-            amin    0.9900
-            wr      40.0000
-            w1      -90.0000
-            r       31.7218
-            qopt    -61.7303
+            theta		-206.247394
+            lambda		-0.008222
+            offset		236.112760
+            r		57.037047
+            qopt		-33.290845
         endactuator
         actuator    JambeD
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    negative
-            Tmax    177.9694
-            T0      127.1210
-            wmax    950.0000
-            wc      380.0000
-            amin    0.9900
-            wr      40.0000
-            w1      -89.9997
-            r       57.0370
-            qopt    -33.2908
+            theta		-392.075509
+            lambda		-0.006623
+            offset		482.485655
+            r		31.721830
+            qopt		-61.730267
         endactuator
 
 
@@ -482,7 +449,7 @@ version   4
             0.00000    0.00000    1.00000    -0.33859
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-        rangesQ -1 0.7
+        rangesQ -0.7 0.7
         rangesQdot -17 17
         mass    0.77311
         inertia
@@ -534,32 +501,24 @@ version   4
 
     // Actuator
         actuator    PiedD
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    positive
-            Tmax    53.8230
-            T0      37.2448
-            wmax    2375.0000
-            wc      375.0000
-            amin    0.9263
-            wr      40.0000
-            w1      -90.0000
-            r       58.9832
-            qopt    0.7442
+            theta		40.039419
+            lambda		0.012287
+            offset		18.805076
+            r		58.983194
+            qopt		0.744169
         endactuator
         actuator    PiedD
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    negative
-            Tmax    171.9903
-            T0      122.8502
-            wmax    2000.0000
-            wc      800.0000
-            amin    0.9900
-            wr      40.0000
-            w1      -90.0000
-            r       21.8717
-            qopt    12.6824
+            theta		-142.661961
+            lambda		-0.006943
+            offset		200.713813
+            r		21.871699
+            qopt		12.682383
         endactuator
 
 
@@ -594,35 +553,25 @@ version   4
 
     // Actuator
         actuator    CuisseG
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction   positive
-            Tmax    220.3831
-            T0      157.4165
-            wmax    475.0000
-            wc      190.0000
-            amin    0.9900
-            wr      40.0000
-            w1      -90.0000
-            r       56.4021
-            qopt    25.6939
+            theta		312.078085
+            lambda		0.010016
+            offset		3.270290
+            r		56.402113
+            qopt		-25.693944
         endactuator
         actuator    CuisseG
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    negative
-            Tmax    490.5938
-            T0      387.3109
-            wmax    562.5000
-            wc      225.0000
-            amin    0.9692
-            wr      40.0000
-            w1      -90.0000
-            r       48.6999
-            qopt    72.5836
+            theta		707.492737
+            lambda		0.008767
+            offset		23.802572
+            r		48.699871
+            qopt		-72.583558
         endactuator
-    
-    
 
 
 // Informations about JambeG segment
@@ -636,7 +585,7 @@ version   4
             0.00000    0.00000    1.00000    -0.38304
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-        rangesQ -2.3 -0.02
+        rangesQ -2.3 -0.05
         rangesQdot -13 20
         mass    3.40206
         inertia
@@ -656,32 +605,24 @@ version   4
 
     // Actuator
         actuator    JambeG
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    positive
-            Tmax    367.6643
-            T0      275.0726
-            wmax    1437.5000
-            wc      575.0000
-            amin    0.9900
-            wr      40.0000
-            w1      -90.0000
-            r       31.7218
-            qopt    -61.7303
+            theta		-206.247394
+            lambda		-0.008222
+            offset		236.112760
+            r		57.037047
+            qopt		-33.290845
         endactuator
         actuator    JambeG
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    negative
-            Tmax    177.9694
-            T0      127.1210
-            wmax    950.0000
-            wc      380.0000
-            amin    0.9900
-            wr      40.0000
-            w1      -89.9997
-            r       57.0370
-            qopt    -33.2908
+            theta		-392.075509
+            lambda		-0.006623
+            offset		482.485655
+            r		31.721830
+            qopt		-61.730267
         endactuator
 
 
@@ -697,7 +638,7 @@ version   4
             0.00000    0.00000    1.00000    -0.33859
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-        rangesQ -1 0.7
+        rangesQ -0.7 0.7
         rangesQdot -17 17
         mass    0.77311
         inertia
@@ -742,37 +683,24 @@ version   4
     endcontact
 
 
-
-
-
-
-
     // Actuator
         actuator    PiedG
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    positive
-            Tmax    53.8230
-            T0      37.2448
-            wmax    2375.0000
-            wc      375.0000
-            amin    0.9263
-            wr      40.0000
-            w1      -90.0000
-            r       58.9832
-            qopt    0.7442
+            theta		40.039419
+            lambda		0.012287
+            offset		18.805076
+            r		58.983194
+            qopt		0.744169
         endactuator
         actuator    PiedG
-            type    Gauss3p
+            type    SigmoidGauss3p
             dof     RotX
             direction    negative
-            Tmax    171.9903
-            T0      122.8502
-            wmax    2000.0000
-            wc      800.0000
-            amin    0.9900
-            wr      40.0000
-            w1      -90.0000
-            r       21.8717
-            qopt    12.6824
+            theta		-142.661961
+            lambda		-0.006943
+            offset		200.713813
+            r		21.871699
+            qopt		12.682383
         endactuator

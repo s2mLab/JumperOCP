@@ -35,8 +35,8 @@ from bioptim import (
 
 def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     from casadi import Function, MX
-    q_reduced = x[0][:nlp["nbQ"]]
-    qdot_reduced = x[0][nlp["nbQ"]:]
+    q_reduced = x[0][:nlp.shape["q"]]
+    qdot_reduced = x[0][nlp.shape["q"]:]
 
     q_mapping = BidirectionalMapping(
         Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
@@ -47,7 +47,7 @@ def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     q_sym = MX.sym("q", q_expanded.size()[0], 1)
     qdot_sym = MX.sym("q_dot", qdot_expanded.size()[0], 1)
     CoM_dot_func = Function(
-        "Compute_CoM_dot", [q_sym, qdot_sym], [nlp["model"].CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
+        "Compute_CoM_dot", [q_sym, qdot_sym], [nlp.model.CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
     ).expand()
     CoM_dot = CoM_dot_func(q_expanded, qdot_expanded)
     return CoM_dot[2]
@@ -55,7 +55,7 @@ def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
 
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=True, use_actuators=True):
+def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_max, use_symmetry=True, use_actuators=True):
     # --- Options --- #
     # Model path
     biorbd_model = [biorbd.Model(elt) for elt in model_path]
@@ -145,9 +145,10 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     #     constraints_second_phase,
     # )
 
-    # # Time constraint
-    # for i in range(nb_phases):
-    #     constraints.add(Constraint.TIME_CONSTRAINT, phase=i, minimum=time_min[i], maximum=time_max[i])
+    # Time constraint
+    for i in range(nb_phases):
+        objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=0.1, phase=i, minimum=time_min[i], maximum=time_max[i])
+        # objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
 
     # --- Path constraints --- #
     if use_symmetry:
@@ -262,8 +263,8 @@ if __name__ == "__main__":
         "../models/jumper2contacts.bioMod",
         "../models/jumper1contacts.bioMod",
     )
-    # time_min = [0.1, 0.2]
-    # time_max = [0.5, 1]
+    time_min = [0.1, 0.0]
+    time_max = [1, 1]
     phase_time = [0.2, 0.4]
     number_shooting_points = [30, 30]
 
@@ -275,6 +276,8 @@ if __name__ == "__main__":
         model_path=model_path,
         phase_time=phase_time,
         number_shooting_points=number_shooting_points,
+        time_min=time_min,
+        time_max=time_max,
         use_symmetry=True,
         use_actuators=True,
     )

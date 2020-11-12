@@ -61,7 +61,7 @@ def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     return CoM_dot[2]
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=True, use_actuators=True):
+def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_max, use_symmetry=True, use_actuators=True):
     # --- Options --- #
     # Model path
     biorbd_model = [biorbd.Model(elt) for elt in model_path]
@@ -92,7 +92,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, use_symmetry=Tru
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1, phase=0)
-    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=0.1, phase=0)
+    objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=0.1, phase=0, minimum=time_min, maximum=time_max)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -271,65 +271,6 @@ def plot_CoM_dot(x, model_path):
     CoM_dot = np.array(CoM_dot_func(q_expanded[:, :], qdot_expanded[:, :]))
     return CoM_dot[2]
 
-
-def plot_surface(model, dof):
-    from casadi import Function, MX
-    import numpy as np
-
-    min_bounds = QAndQDotBounds(model)[:].min
-    max_bounds = QAndQDotBounds(model)[:].max
-    nbq = model.nbQ()
-
-    q_sym = MX.sym("q", nbq, 1)
-    qdot_sym = MX.sym("q_dot", nbq, 1)
-    torque_pos_func = Function(
-            "torque_func",
-            [q_sym, qdot_sym],
-            [model.torqueMax(q_sym, qdot_sym)[0].to_mx()],
-            ["Q", "Qdot"],
-            ["Tau"])
-
-    torque_min_func = Function(
-            "torque_func",
-            [q_sym, qdot_sym],
-            [model.torqueMax(q_sym, qdot_sym)[1].to_mx()],
-            ["Q", "Qdot"],
-            ["Tau"])
-
-    q = np.arange(min_bounds[dof][0], max_bounds[dof][0], round(max_bounds[dof][0] - min_bounds[dof][0], 10) / 100)
-    qdot = np.arange(min_bounds[dof + nbq][0], max_bounds[dof + nbq][0], round(max_bounds[dof + nbq][0] - min_bounds[dof + nbq][0], 10) / 100)
-
-    tau_pos = np.zeros((100, 100))
-    tau_min = np.zeros((100, 100))
-
-    for i in range(100):
-        for j in range(100):
-            tau_pos[i, j] = torque_pos_func(np.ones(nbq) * q[i], np.ones(nbq) * qdot[j]).__array__()[dof]
-            tau_min[i, j] = torque_min_func(np.ones(nbq) * q[i], np.ones(nbq) * qdot[j]).__array__()[dof]
-
-
-    fig_pos = plt.figure()
-    fig_min = plt.figure()
-
-    ax_min = fig_min.gca(projection='3d')
-    ax_pos = fig_pos.gca(projection='3d')
-
-    q, qdot = np.meshgrid(q, qdot)
-
-    ax_pos.plot_surface(q, qdot, tau_pos)
-    ax_min.plot_surface(q, qdot, tau_min)
-
-    ax_pos.set_xlabel('Qdot', fontsize=15)
-    ax_pos.set_ylabel('Q', fontsize=15)
-    ax_pos.set_zlabel('Tau', fontsize=15)
-
-    ax_min.set_xlabel('Qdot', fontsize=15)
-    ax_min.set_ylabel('Q', fontsize=15)
-    ax_min.set_zlabel('Tau', fontsize=15)
-
-    plt.show()
-
-
 # def run_and_save_ocp(model_path, phase_time, number_shooting_points):
 #     ocp = prepare_ocp(
 #         model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True
@@ -341,13 +282,10 @@ def plot_surface(model, dof):
 
 
 if __name__ == "__main__":
-    # plot_surface(biorbd.Model("../models/jumper2contacts.bioMod"), 7)
-    # plot_surface(biorbd.Model("../models/jumper2contacts.bioMod"), 8)
-    # plot_surface(biorbd.Model("../models/jumper2contacts.bioMod"), 9)
     model_path = ("../models/jumper2contacts.bioMod",)
-    time_min = [0.2]
+    time_min = [0.4]
     time_max = [1]
-    phase_time = 0.4
+    phase_time = 0.6
     number_shooting_points = 30
 
     tic = time()
