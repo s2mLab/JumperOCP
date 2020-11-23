@@ -2,9 +2,10 @@ from time import time
 
 import numpy as np
 import biorbd
+from casadi import vertcat
 
 from bioptim import (
-    Instant,
+    Node,
     OptimalControlProgram,
     ConstraintList,
     Constraint,
@@ -53,6 +54,26 @@ def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     return CoM_dot[2]
 
 
+def Torque_Constraint(ocp, nlp, t, x, u, p):
+    nq = nlp.mapping["q"].reduce.len
+    q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
+    qdot = [nlp.mapping["q_dot"].expand.map(mx[nq:]) for mx in x]
+
+    min_bound = []
+    max_bound = []
+
+    for i in range(len(u)):
+        pos, neg = nlp.model.torqueMax(q[i], qdot[i])
+        min_bound.append(nlp.mapping["tau"].reduce.map(neg.to_mx()))
+        max_bound.append(nlp.mapping["tau"].reduce.map(pos.to_mx()))
+
+    obj = vertcat(*u)
+    min_bound = vertcat(*min_bound)
+    max_bound = vertcat(*max_bound)
+
+    return vertcat(np.zeros(min_bound.shape), np.ones(max_bound.shape) * -1000),\
+            vertcat(obj + min_bound, obj - max_bound),\
+            vertcat(np.ones(min_bound.shape) * 1000, np.zeros(max_bound.shape))
 
 
 def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_max, use_symmetry=True, use_actuators=True):
@@ -102,23 +123,26 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
     # Positivity constraints of the normal component of the reaction forces
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
-        constraints.add(Constraint.CONTACT_FORCE_INEQUALITY, phase=0, direction="GREATER_THAN", instant=Instant.ALL, contact_force_idx=i, boundary=0)
+        constraints.add(Constraint.CONTACT_FORCE, phase=0, node=Node.ALL, contact_force_idx=i, min_bound=0, max_bound=np.inf)
     contact_axes = (1, 3)
     for i in contact_axes:
-        constraints.add(Constraint.CONTACT_FORCE_INEQUALITY, phase=1, direction="GREATER_THAN", instant=Instant.ALL, contact_force_idx=i, boundary=0)
+        constraints.add(Constraint.CONTACT_FORCE, phase=1, node=Node.ALL, contact_force_idx=i, min_bound=0, max_bound=np.inf)
 
     # Non-slipping constraints
     # N.B.: Application on only one of the two feet is sufficient, as the slippage cannot occurs on only one foot.
-    constraints.add(Constraint.NON_SLIPPING, phase=0, instant=Instant.ALL, normal_component_idx=(1, 2), tangential_component_idx=0, static_friction_coefficient=0.5)
-    constraints.add(Constraint.NON_SLIPPING, phase=1, instant=Instant.ALL, normal_component_idx=1, tangential_component_idx=0, static_friction_coefficient=0.5)
+    constraints.add(Constraint.NON_SLIPPING, phase=0, node=Node.ALL, normal_component_idx=(1, 2), tangential_component_idx=0, static_friction_coefficient=0.5)
+    constraints.add(Constraint.NON_SLIPPING, phase=1, node=Node.ALL, normal_component_idx=1, tangential_component_idx=0, static_friction_coefficient=0.5)
 
     # Custom constraints for contact forces at transitions
     # constraints_second_phase.append(
-    #     {"type": Constraint.CUSTOM, "function": from_2contacts_to_1, "instant": Instant.START}
+    #     {"type": Constraint.CUSTOM, "function": from_2contacts_to_1, "node": Node.START}
     # )
 
     # Custom constraints for positivity of CoM_dot on z axis just before the take-off
-    constraints.add(CoM_dot_Z_last_node_positivity, phase=1, instant=Instant.END, min_bound=0, max_bound=np.inf)
+    constraints.add(CoM_dot_Z_last_node_positivity, phase=1, node=Node.END, min_bound=0, max_bound=np.inf)
+
+    for i in range(nb_phases):
+        constraints.add(Torque_Constraint, phase=i, node=Node.ALL)
 
     # TODO: Make it works also with no symmetry (adapt to refactor)
     # if not use_symmetry:
@@ -133,7 +157,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
     #             elt.append(
     #                 {
     #                     "type": Constraint.PROPORTIONAL_STATE,
-    #                     "instant": Instant.ALL,
+    #                     "node": Node.ALL,
     #                     "first_dof": first_dof[i],
     #                     "second_dof": second_dof[i],
     #                     "coef": coef[i],
@@ -147,8 +171,8 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
 
     # Time constraint
     for i in range(nb_phases):
-        objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=0.1, phase=i, minimum=time_min[i], maximum=time_max[i])
-        # objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
+        #objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=0.0001, phase=i)#, min_bound=time_min[i], max_bound=time_max[i])
+        objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
 
     # --- Path constraints --- #
     if use_symmetry:
@@ -279,7 +303,7 @@ if __name__ == "__main__":
         time_min=time_min,
         time_max=time_max,
         use_symmetry=True,
-        use_actuators=True,
+        use_actuators=False,
     )
     ocp.add_plot(
         "CoM", lambda x, u, p: plot_CoM(x, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.PLOT
