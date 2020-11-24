@@ -48,7 +48,11 @@ def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     q_sym = MX.sym("q", q_expanded.size()[0], 1)
     qdot_sym = MX.sym("q_dot", qdot_expanded.size()[0], 1)
     CoM_dot_func = Function(
-        "Compute_CoM_dot", [q_sym, qdot_sym], [nlp.model.CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
+        "Compute_CoM_dot",
+        [q_sym, qdot_sym],
+        [nlp.model.CoMdot(q_sym, qdot_sym).to_mx()],
+        ["q", "q_dot"],
+        ["CoM_dot"],
     ).expand()
     CoM_dot = CoM_dot_func(q_expanded, qdot_expanded)
     return CoM_dot[2]
@@ -123,15 +127,36 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
     # Positivity constraints of the normal component of the reaction forces
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
-        constraints.add(Constraint.CONTACT_FORCE, phase=0, node=Node.ALL, contact_force_idx=i, min_bound=0, max_bound=np.inf)
+        constraints.add(
+            Constraint.CONTACT_FORCE,
+            phase=0,
+            node=Node.ALL,
+            contact_force_idx=i,
+            min_bound=0,
+            max_bound=np.inf
+        )
     contact_axes = (1, 3)
     for i in contact_axes:
         constraints.add(Constraint.CONTACT_FORCE, phase=1, node=Node.ALL, contact_force_idx=i, min_bound=0, max_bound=np.inf)
 
     # Non-slipping constraints
     # N.B.: Application on only one of the two feet is sufficient, as the slippage cannot occurs on only one foot.
-    constraints.add(Constraint.NON_SLIPPING, phase=0, node=Node.ALL, normal_component_idx=(1, 2), tangential_component_idx=0, static_friction_coefficient=0.5)
-    constraints.add(Constraint.NON_SLIPPING, phase=1, node=Node.ALL, normal_component_idx=1, tangential_component_idx=0, static_friction_coefficient=0.5)
+    constraints.add(
+        Constraint.NON_SLIPPING,
+        phase=0,
+        node=Node.ALL,
+        normal_component_idx=(1, 2),
+        tangential_component_idx=0,
+        static_friction_coefficient=0.5,
+    )
+    constraints.add(
+        Constraint.NON_SLIPPING,
+        phase=1,
+        node=Node.ALL,
+        normal_component_idx=1,
+        tangential_component_idx=0,
+        static_friction_coefficient=0.5
+    )
 
     # Custom constraints for contact forces at transitions
     # constraints_second_phase.append(
