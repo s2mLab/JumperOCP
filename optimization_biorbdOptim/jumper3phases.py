@@ -117,7 +117,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
     if use_actuators:
         dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
         dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN_WITH_CONTACT)
-        dynamics.add(DynamicsType.TORQUE_ACTIVATIONS_DRIVEN)
+        dynamics.add(DynamicsType.TORQUE_DRIVEN)
     else:
         dynamics.add(DynamicsType.TORQUE_DRIVEN_WITH_CONTACT)
         dynamics.add(DynamicsType.TORQUE_DRIVEN_WITH_CONTACT)
