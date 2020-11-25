@@ -65,10 +65,11 @@ def Torque_Constraint(ocp, nlp, t, x, u, p):
     min_bound = []
     max_bound = []
 
+    func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.q, nlp.q_dot)
     for i in range(len(u)):
-        pos, neg = nlp.model.torqueMax(q[i], qdot[i])
-        min_bound.append(nlp.mapping["tau"].reduce.map(neg.to_mx()))
-        max_bound.append(nlp.mapping["tau"].reduce.map(pos.to_mx()))
+        bound = func(q[i], qdot[i])
+        min_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 1]))
+        max_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 0]))
 
     obj = vertcat(*u)
     min_bound = vertcat(*min_bound)
