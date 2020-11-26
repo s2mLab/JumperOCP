@@ -139,7 +139,14 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
         )
     contact_axes = (1, 3)
     for i in contact_axes:
-        constraints.add(Constraint.CONTACT_FORCE, phase=1, node=Node.ALL, contact_force_idx=i, min_bound=0, max_bound=np.inf)
+        constraints.add(
+            Constraint.CONTACT_FORCE,
+            phase=1,
+            node=Node.ALL,
+            contact_force_idx=i,
+            min_bound=0,
+            max_bound=np.inf
+        )
 
     # Non-slipping constraints
     # N.B.: Application on only one of the two feet is sufficient, as the slippage cannot occurs on only one foot.
@@ -157,7 +164,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
         node=Node.ALL,
         normal_component_idx=1,
         tangential_component_idx=0,
-        static_friction_coefficient=0.5
+        static_friction_coefficient=0.5,
     )
 
     # Custom constraints for contact forces at transitions
@@ -364,10 +371,10 @@ if __name__ == "__main__":
         "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.STEP, color='g'
     )
     ocp.add_plot(
-        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper2contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP, color='g'
+        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper1contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP, color='g'
     )
     ocp.add_plot(
-        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper2contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP, color='g'
+        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper1contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP, color='g'
     )
     ocp.add_plot(
         "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper1contacts.bioMod"), phase_number=2, plot_type=PlotType.STEP, color='g'
