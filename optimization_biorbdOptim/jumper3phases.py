@@ -341,7 +341,7 @@ if __name__ == "__main__":
     time_min = [0.1, 0.0]
     time_max = [1, 1]
     phase_time = [0.6, 0.2, 1]
-    number_shooting_points = [30, 20, 10]
+    number_shooting_points = [30, 30, 30]
 
     tic = time()
     # run_and_save_ocp(model_path, phase_time=phase_time, number_shooting_points=number_shooting_points)
@@ -358,22 +358,22 @@ if __name__ == "__main__":
     )
     # Plot Torque Bounds
     ocp.add_plot(
-        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.STEP
+        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.STEP, color='g'
     )
     ocp.add_plot(
-        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.STEP
+        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.STEP, color='g'
     )
     ocp.add_plot(
-        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper2contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP
+        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper2contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP, color='g'
     )
     ocp.add_plot(
-        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper2contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP
+        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper2contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP, color='g'
     )
     ocp.add_plot(
-        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper1contacts.bioMod"), phase_number=2, plot_type=PlotType.STEP
+        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper1contacts.bioMod"), phase_number=2, plot_type=PlotType.STEP, color='g'
     )
     ocp.add_plot(
-        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper1contacts.bioMod"), phase_number=2, plot_type=PlotType.STEP
+        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper1contacts.bioMod"), phase_number=2, plot_type=PlotType.STEP, color='g'
     )
     # Plot CoM pos and speed
     ocp.add_plot(
