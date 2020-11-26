@@ -482,7 +482,7 @@ version   4
             0.00000    0.00000    1.00000    -0.33859
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-        rangesQ -1 0.7
+        rangesQ -0.7 0.7
         rangesQdot -17 17
         mass    0.77311
         inertia
@@ -697,7 +697,7 @@ version   4
             0.00000    0.00000    1.00000    -0.33859
             0.00000    0.00000    0.00000    1.00000
         rotations    x
-        rangesQ -1 0.7
+        rangesQ -0.7 0.7
         rangesQdot -17 17
         mass    0.77311
         inertia
