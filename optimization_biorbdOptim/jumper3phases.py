@@ -363,222 +363,82 @@ if __name__ == "__main__":
         use_symmetry=True,
         use_actuators=False,
     )
-    # Plot Torque Bounds
-    ocp.add_plot(
-        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.STEP, color='g'
-    )
-    ocp.add_plot(
-        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.STEP, color='g'
-    )
-    ocp.add_plot(
-        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper1contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP, color='g'
-    )
-    ocp.add_plot(
-        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper1contacts.bioMod"), phase_number=1, plot_type=PlotType.STEP, color='g'
-    )
-    ocp.add_plot(
-        "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper1contacts.bioMod"), phase_number=2, plot_type=PlotType.STEP, color='g'
-    )
-    ocp.add_plot(
-        "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper1contacts.bioMod"), phase_number=2, plot_type=PlotType.STEP, color='g'
-    )
-    # Plot CoM pos and speed
-    ocp.add_plot(
-        "CoM", lambda x, u, p: plot_CoM(x, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.PLOT
-    )
-    ocp.add_plot(
-        "CoM", lambda x, u, p: plot_CoM(x, "../models/jumper1contacts.bioMod"), phase_number=1, plot_type=PlotType.PLOT
-    )
-    ocp.add_plot(
-        "CoM", lambda x, u, p: plot_CoM(x, "../models/jumper1contacts.bioMod"), phase_number=2, plot_type=PlotType.PLOT
-    )
-    ocp.add_plot(
-        "CoM_dot",
-        lambda x, u, p: plot_CoM_dot(x, "../models/jumper2contacts.bioMod"),
-        phase_number=0,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "CoM_dot",
-        lambda x, u, p: plot_CoM_dot(x, "../models/jumper1contacts.bioMod"),
-        phase_number=1,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "CoM_dot",
-        lambda x, u, p: plot_CoM_dot(x, "../models/jumper1contacts.bioMod"),
-        phase_number=2,
-        plot_type=PlotType.PLOT,
-    )
-    # Plot q and qdot ranges
-    ocp.add_plot(
-        "q",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * -10,
-            np.ones(len(x[0])) * -10,
-            np.ones(len(x[0])) * -30,
-            np.ones(len(x[0])) * -0.7,
-            np.ones(len(x[0])) * -0.4,
-            np.ones(len(x[0])) * -2.3,
-            np.ones(len(x[0])) * -0.7
-            ]),
-        phase_number=0,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * 10,
-            np.ones(len(x[0])) * 10,
-            np.ones(len(x[0])) * 30,
-            np.ones(len(x[0])) * 3.1,
-            np.ones(len(x[0])) * 2.6,
-            np.ones(len(x[0])) * 0.02,
-            np.ones(len(x[0])) * 0.7
-            ]),
-        phase_number=0,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q_dot",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * -20,
-            np.ones(len(x[0])) * -20,
-            np.ones(len(x[0])) * -15,
-            np.ones(len(x[0])) * -17,
-            np.ones(len(x[0])) * -10,
-            np.ones(len(x[0])) * -13,
-            np.ones(len(x[0])) * -17
-            ]),
-        phase_number=0,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q_dot",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * 20,
-            np.ones(len(x[0])) * 20,
-            np.ones(len(x[0])) * 15,
-            np.ones(len(x[0])) * 17,
-            np.ones(len(x[0])) * 8,
-            np.ones(len(x[0])) * 20,
-            np.ones(len(x[0])) * 17
-            ]),
-        phase_number=0,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * -10,
-            np.ones(len(x[0])) * -10,
-            np.ones(len(x[0])) * -30,
-            np.ones(len(x[0])) * -0.7,
-            np.ones(len(x[0])) * -0.4,
-            np.ones(len(x[0])) * -2.3,
-            np.ones(len(x[0])) * -0.7
-            ]),
-        phase_number=1,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * 10,
-            np.ones(len(x[0])) * 10,
-            np.ones(len(x[0])) * 30,
-            np.ones(len(x[0])) * 3.1,
-            np.ones(len(x[0])) * 2.6,
-            np.ones(len(x[0])) * 0.02,
-            np.ones(len(x[0])) * 0.7
-            ]),
-        phase_number=1,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q_dot",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * -20,
-            np.ones(len(x[0])) * -20,
-            np.ones(len(x[0])) * -15,
-            np.ones(len(x[0])) * -17,
-            np.ones(len(x[0])) * -10,
-            np.ones(len(x[0])) * -13,
-            np.ones(len(x[0])) * -17
-            ]),
-        phase_number=1,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q_dot",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * 20,
-            np.ones(len(x[0])) * 20,
-            np.ones(len(x[0])) * 15,
-            np.ones(len(x[0])) * 17,
-            np.ones(len(x[0])) * 8,
-            np.ones(len(x[0])) * 20,
-            np.ones(len(x[0])) * 17
-            ]),
-        phase_number=1,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * -10,
-            np.ones(len(x[0])) * -10,
-            np.ones(len(x[0])) * -30,
-            np.ones(len(x[0])) * -0.7,
-            np.ones(len(x[0])) * -0.4,
-            np.ones(len(x[0])) * -2.3,
-            np.ones(len(x[0])) * -0.7
-            ]),
-        phase_number=2,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * 10,
-            np.ones(len(x[0])) * 10,
-            np.ones(len(x[0])) * 30,
-            np.ones(len(x[0])) * 3.1,
-            np.ones(len(x[0])) * 2.6,
-            np.ones(len(x[0])) * 0.02,
-            np.ones(len(x[0])) * 0.7
-            ]),
-        phase_number=2,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q_dot",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * -20,
-            np.ones(len(x[0])) * -20,
-            np.ones(len(x[0])) * -15,
-            np.ones(len(x[0])) * -17,
-            np.ones(len(x[0])) * -10,
-            np.ones(len(x[0])) * -13,
-            np.ones(len(x[0])) * -17
-            ]),
-        phase_number=2,
-        plot_type=PlotType.PLOT,
-    )
-    ocp.add_plot(
-        "q_dot",
-        lambda x, u, p: np.array([
-            np.ones(len(x[0])) * 20,
-            np.ones(len(x[0])) * 20,
-            np.ones(len(x[0])) * 15,
-            np.ones(len(x[0])) * 17,
-            np.ones(len(x[0])) * 8,
-            np.ones(len(x[0])) * 20,
-            np.ones(len(x[0])) * 17
-            ]),
-        phase_number=2,
-        plot_type=PlotType.PLOT,
-    )
+
+    for i in range(len(model_path)):
+        # Plot Torque Bounds
+        ocp.add_plot(
+            "tau", lambda x, u, p: plot_torque_bounds(x, 0, "../models/jumper2contacts.bioMod"), phase_number=i, plot_type=PlotType.STEP, color='g'
+        )
+        ocp.add_plot(
+            "tau", lambda x, u, p: -plot_torque_bounds(x, 1, "../models/jumper2contacts.bioMod"), phase_number=i, plot_type=PlotType.STEP, color='g'
+        )
+        # Plot CoM pos and speed
+        ocp.add_plot(
+            "CoM", lambda x, u, p: plot_CoM(x, "../models/jumper2contacts.bioMod"), phase_number=i, plot_type=PlotType.PLOT
+        )
+        ocp.add_plot(
+            "CoM_dot",
+            lambda x, u, p: plot_CoM_dot(x, "../models/jumper2contacts.bioMod"),
+            phase_number=i,
+            plot_type=PlotType.PLOT,
+        )
+        # Plot q and qdot ranges
+        ocp.add_plot(
+            "q",
+            lambda x, u, p: np.array([
+                np.ones(len(x[0])) * -10,
+                np.ones(len(x[0])) * -10,
+                np.ones(len(x[0])) * -30,
+                np.ones(len(x[0])) * -0.7,
+                np.ones(len(x[0])) * -0.4,
+                np.ones(len(x[0])) * -2.3,
+                np.ones(len(x[0])) * -0.7
+                ]),
+            phase_number=i,
+            plot_type=PlotType.PLOT,
+        )
+        ocp.add_plot(
+            "q",
+            lambda x, u, p: np.array([
+                np.ones(len(x[0])) * 10,
+                np.ones(len(x[0])) * 10,
+                np.ones(len(x[0])) * 30,
+                np.ones(len(x[0])) * 3.1,
+                np.ones(len(x[0])) * 2.6,
+                np.ones(len(x[0])) * 0.02,
+                np.ones(len(x[0])) * 0.7
+                ]),
+            phase_number=i,
+            plot_type=PlotType.PLOT,
+        )
+        ocp.add_plot(
+            "q_dot",
+            lambda x, u, p: np.array([
+                np.ones(len(x[0])) * -20,
+                np.ones(len(x[0])) * -20,
+                np.ones(len(x[0])) * -15,
+                np.ones(len(x[0])) * -17,
+                np.ones(len(x[0])) * -10,
+                np.ones(len(x[0])) * -13,
+                np.ones(len(x[0])) * -17
+                ]),
+            phase_number=i,
+            plot_type=PlotType.PLOT,
+        )
+        ocp.add_plot(
+            "q_dot",
+            lambda x, u, p: np.array([
+                np.ones(len(x[0])) * 20,
+                np.ones(len(x[0])) * 20,
+                np.ones(len(x[0])) * 15,
+                np.ones(len(x[0])) * 17,
+                np.ones(len(x[0])) * 8,
+                np.ones(len(x[0])) * 20,
+                np.ones(len(x[0])) * 17
+                ]),
+            phase_number=i,
+            plot_type=PlotType.PLOT,
+        )
 
     sol = ocp.solve(show_online_optim=True, solver_options={"hessian_approximation": "exact", "max_iter": 1000})
 
