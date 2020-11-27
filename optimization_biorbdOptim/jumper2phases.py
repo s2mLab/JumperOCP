@@ -34,10 +34,12 @@ from bioptim import (
 #     val = x[0][7:14]
 #     return val
 
+
 def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     from casadi import Function, MX
-    q_reduced = x[0][:nlp.shape["q"]]
-    qdot_reduced = x[0][nlp.shape["q"]:]
+
+    q_reduced = x[0][: nlp.shape["q"]]
+    qdot_reduced = x[0][nlp.shape["q"] :]
 
     q_mapping = BidirectionalMapping(
         Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
@@ -75,12 +77,16 @@ def Torque_Constraint(ocp, nlp, t, x, u, p):
     min_bound = vertcat(*min_bound)
     max_bound = vertcat(*max_bound)
 
-    return vertcat(np.zeros(min_bound.shape), np.ones(max_bound.shape) * -1000),\
-            vertcat(obj + min_bound, obj - max_bound),\
-            vertcat(np.ones(min_bound.shape) * 1000, np.zeros(max_bound.shape))
+    return (
+        vertcat(np.zeros(min_bound.shape), np.ones(max_bound.shape) * -1000),
+        vertcat(obj + min_bound, obj - max_bound),
+        vertcat(np.ones(min_bound.shape) * 1000, np.zeros(max_bound.shape)),
+    )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_max, use_symmetry=True, use_actuators=True):
+def prepare_ocp(
+    model_path, phase_time, number_shooting_points, time_min, time_max, use_symmetry=True, use_actuators=True
+):
     # --- Options --- #
     # Model path
     biorbd_model = [biorbd.Model(elt) for elt in model_path]
@@ -128,16 +134,13 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
         constraints.add(
-            Constraint.CONTACT_FORCE,
-            phase=0,
-            node=Node.ALL,
-            contact_force_idx=i,
-            min_bound=0,
-            max_bound=np.inf
+            Constraint.CONTACT_FORCE, phase=0, node=Node.ALL, contact_force_idx=i, min_bound=0, max_bound=np.inf
         )
     contact_axes = (1, 3)
     for i in contact_axes:
-        constraints.add(Constraint.CONTACT_FORCE, phase=1, node=Node.ALL, contact_force_idx=i, min_bound=0, max_bound=np.inf)
+        constraints.add(
+            Constraint.CONTACT_FORCE, phase=1, node=Node.ALL, contact_force_idx=i, min_bound=0, max_bound=np.inf
+        )
 
     # Non-slipping constraints
     # N.B.: Application on only one of the two feet is sufficient, as the slippage cannot occurs on only one foot.
@@ -155,7 +158,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
         node=Node.ALL,
         normal_component_idx=1,
         tangential_component_idx=0,
-        static_friction_coefficient=0.5
+        static_friction_coefficient=0.5,
     )
 
     # Custom constraints for contact forces at transitions
@@ -196,7 +199,7 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
 
     # Time constraint
     for i in range(nb_phases):
-        #objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=0.0001, phase=i)#, min_bound=time_min[i], max_bound=time_max[i])
+        # objective_functions.add(Objective.Lagrange.MINIMIZE_TIME, weight=0.0001, phase=i)#, min_bound=time_min[i], max_bound=time_max[i])
         objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
 
     # --- Path constraints --- #
@@ -223,22 +226,24 @@ def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_m
 
     # Initial guess for states (Interpolation type is CONSTANT for 1st phase and SPLINE with 3 key positions for 2nd phase)
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * nb_qdot)      # x_init phase 0 type CONSTANT
+    x_init.add(pose_at_first_node + [0] * nb_qdot)  # x_init phase 0 type CONSTANT
     t_spline = np.hstack((0, 0.34, phase_time[1]))
     p0 = np.array([pose_at_first_node + [0] * nb_qdot]).T
     p_flex = np.array([[-0.12, -0.23, -1.10, 1.85, 2.06, -1.67, 0.55, 0, 0, 0, 0, 0, 0, 0]]).T
     p_end = p0
     key_positions = np.hstack((p0, p_flex, p_end))
-    x_init.add(key_positions, t=t_spline, interpolation=InterpolationType.SPLINE)       # x_init phase 1 type SPLINE
+    x_init.add(key_positions, t=t_spline, interpolation=InterpolationType.SPLINE)  # x_init phase 1 type SPLINE
 
     # Define control path constraint
     u_bounds = BoundsList()
     for tau_m in tau_mapping:
-        u_bounds.add([[tau_min] * tau_m.reduce.len, [tau_max] * tau_m.reduce.len], interpolation=InterpolationType.CONSTANT)    # This precision of the CONSTANT type is for informative purposes only
+        u_bounds.add(
+            [[tau_min] * tau_m.reduce.len, [tau_max] * tau_m.reduce.len], interpolation=InterpolationType.CONSTANT
+        )  # This precision of the CONSTANT type is for informative purposes only
 
     u_init = InitialGuessList()
     for tau_m in tau_mapping:
-        u_init.add([tau_init] * tau_m.reduce.len)     # Interpolation type is CONSTANT (default value)
+        u_init.add([tau_init] * tau_m.reduce.len)  # Interpolation type is CONSTANT (default value)
 
     # ------------- #
 
@@ -271,7 +276,13 @@ def plot_CoM(x, model_path):
     import numpy as np
 
     q_sym = MX.sym("q", m.nbQ(), 1)
-    CoM_func = Function("Compute_CoM", [q_sym], [m.CoM(q_sym).to_mx()], ["q"], ["CoM"],).expand()
+    CoM_func = Function(
+        "Compute_CoM",
+        [q_sym],
+        [m.CoM(q_sym).to_mx()],
+        ["q"],
+        ["CoM"],
+    ).expand()
     CoM = np.array(CoM_func(q_expanded[:, :]))
     return CoM[2]
 
@@ -291,7 +302,11 @@ def plot_CoM_dot(x, model_path):
     q_sym = MX.sym("q", m.nbQ(), 1)
     qdot_sym = MX.sym("q_dot", m.nbQdot(), 1)
     CoM_dot_func = Function(
-        "Compute_CoM_dot", [q_sym, qdot_sym], [m.CoMdot(q_sym, qdot_sym).to_mx()], ["q", "q_dot"], ["CoM_dot"],
+        "Compute_CoM_dot",
+        [q_sym, qdot_sym],
+        [m.CoMdot(q_sym, qdot_sym).to_mx()],
+        ["q", "q_dot"],
+        ["CoM_dot"],
     ).expand()
     CoM_dot = np.array(CoM_dot_func(q_expanded[:, :], qdot_expanded[:, :]))
     return CoM_dot[2]
@@ -351,7 +366,7 @@ if __name__ == "__main__":
 
     sol = ocp.solve(show_online_optim=True, solver_options={"hessian_approximation": "exact", "max_iter": 1000})
 
-    #--- Show results --- #
+    # --- Show results --- #
     # param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
     # print(
     #     f"The optimized phases times are: {param['time'][0, 0]}s and {param['time'][1, 0]}s."

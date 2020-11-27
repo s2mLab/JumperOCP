@@ -38,8 +38,9 @@ from bioptim import (
 
 def CoM_dot_Z_last_node_positivity(ocp, nlp, t, x, u, p):
     from casadi import Function, MX
-    q_reduced = x[0][:nlp.shape["q"]]
-    qdot_reduced = x[0][nlp.shape["q"]:]
+
+    q_reduced = x[0][: nlp.shape["q"]]
+    qdot_reduced = x[0][nlp.shape["q"] :]
 
     q_mapping = BidirectionalMapping(
         Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
@@ -77,12 +78,16 @@ def Torque_Constraint(ocp, nlp, t, x, u, p):
     min_bound = vertcat(*min_bound)
     max_bound = vertcat(*max_bound)
 
-    return vertcat(np.zeros(min_bound.shape), np.ones(max_bound.shape) * -1000),\
-            vertcat(obj + min_bound, obj - max_bound),\
-            vertcat(np.ones(min_bound.shape) * 1000, np.zeros(max_bound.shape))
+    return (
+        vertcat(np.zeros(min_bound.shape), np.ones(max_bound.shape) * -1000),
+        vertcat(obj + min_bound, obj - max_bound),
+        vertcat(np.ones(min_bound.shape) * 1000, np.zeros(max_bound.shape)),
+    )
 
 
-def prepare_ocp(model_path, phase_time, number_shooting_points, time_min, time_max, use_symmetry=True, use_actuators=True):
+def prepare_ocp(
+    model_path, phase_time, number_shooting_points, time_min, time_max, use_symmetry=True, use_actuators=True
+):
     # --- Options --- #
     # Model path
     biorbd_model = [biorbd.Model(elt) for elt in model_path]
@@ -293,6 +298,7 @@ def plot_CoM_dot(x, model_path):
     CoM_dot = np.array(CoM_dot_func(q_expanded[:, :], qdot_expanded[:, :]))
     return CoM_dot[2]
 
+
 # def run_and_save_ocp(model_path, phase_time, number_shooting_points):
 #     ocp = prepare_ocp(
 #         model_path=model_path, phase_time=phase_time, number_shooting_points=number_shooting_points, use_symmetry=True
@@ -321,7 +327,9 @@ if __name__ == "__main__":
         use_symmetry=True,
         use_actuators=False,
     )
-    ocp.add_plot("CoM", lambda x, u, p: plot_CoM(x, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.PLOT)
+    ocp.add_plot(
+        "CoM", lambda x, u, p: plot_CoM(x, "../models/jumper2contacts.bioMod"), phase_number=0, plot_type=PlotType.PLOT
+    )
     ocp.add_plot(
         "CoM_dot",
         lambda x, u, p: plot_CoM_dot(x, "../models/jumper2contacts.bioMod"),
@@ -331,7 +339,7 @@ if __name__ == "__main__":
 
     sol = ocp.solve(show_online_optim=True, solver_options={"hessian_approximation": "exact", "max_iter": 10000})
 
-    #--- Show results --- #
+    # --- Show results --- #
     # param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
     # print(
     #     f"The optimized phase time are: {param['time'][0, 0]}s."
