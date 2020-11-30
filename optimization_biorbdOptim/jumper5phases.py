@@ -249,10 +249,10 @@ def prepare_ocp(
     )
 
     # Custom constraints for contact forces at transitions
-    # constraints.add(from_2contacts_to_1, phase=1, node=Node.START)
-    # constraints.add(from_1contact_to_0, phase=2, node=Node.START)
-    # constraints.add(from_0contact_to_1, phase=3, node=Node.START)
-    # constraints.add(from_1contact_to_2, phase=4, node=Node.START)
+    constraints.add(from_2contacts_to_1, phase=1, node=Node.START)
+    constraints.add(from_1contact_to_0, phase=2, node=Node.START)
+    constraints.add(from_0contact_to_1, phase=3, node=Node.START)
+    constraints.add(from_1contact_to_2, phase=4, node=Node.START)
 
     # Custom constraints for positivity of CoM_dot on z axis just before the take-off
     constraints.add(CoM_dot_Z_last_node_positivity, phase=1, node=Node.END, min_bound=0, max_bound=np.inf)
@@ -308,15 +308,14 @@ def prepare_ocp(
     x_bounds = BoundsList()
     for i in range(nb_phases):
         x_bounds.add(QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]))
-    x_bounds[0].min[:, 0] = pose_at_first_node + [0] * nb_qdot
-    x_bounds[0].max[:, 0] = pose_at_first_node + [0] * nb_qdot
-    x_bounds[4].min[:, -1] = pose_at_first_node + [0] * nb_qdot
-    x_bounds[4].max[:, -1] = pose_at_first_node + [0] * nb_qdot
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
+    #x_bounds[4][:, -1] = pose_at_first_node + [0] * nb_qdot
 
     # # Initial guess for states (Interpolation type is CONSTANT)
     # x_init = InitialGuessList()
     # for i in range(nb_phases):
     #     x_init.add(pose_at_first_node + [0] * nb_qdot)
+    #plancher = 77cm,
 
     # Initial guess for states (Interpolation type is CONSTANT all phases except the SPLINE type with 3 key positions for 2nd phase)
     x_init = InitialGuessList()
