@@ -283,12 +283,16 @@ def prepare_ocp(
     # Torque constraint + minimize_state
     for i in range(nb_phases):
         constraints.add(Torque_Constraint, phase=i, node=Node.ALL)
-        #objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
-        objective_functions.add(Objective.Mayer.MINIMIZE_TIME, weight=0.0001, phase=i, min_bound=time_min[i], max_bound=time_max[i])
+        if i == 2:
+            objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=-0.0001, phase=i)
+        else:
+            objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
+            objective_functions.add(Objective.Mayer.MINIMIZE_TIME, weight=0.0001, phase=i, min_bound=time_min[i], max_bound=time_max[i])
 
     # State transitions
     state_transitions = StateTransitionList()
     state_transitions.add(StateTransition.IMPACT, phase_pre_idx=2)
+    state_transitions.add(StateTransition.IMPACT, phase_pre_idx=3)
 
     # Path constraint
     if use_symmetry:
@@ -356,7 +360,7 @@ def prepare_ocp(
         q_dot_mapping=q_mapping,
         tau_mapping=tau_mapping,
         state_transitions=state_transitions,
-        nb_threads=4,
+        nb_threads=2,
     )
 
     for i in range(nb_phases):
@@ -514,10 +518,10 @@ if __name__ == "__main__":
         "../models/jumper1contacts.bioMod",
         "../models/jumper2contacts.bioMod",
     )
-    time_min = [0.6, 0.2, 0.1, 0.1, 0.4]
-    time_max = [0.6, 0.2, 1, 0.1, 0.4]
-    phase_time = [0.6, 0.2, 1, 0.1, 0.4]
-    number_shooting_points = [20, 20, 20, 20, 20]
+    time_min = [0.6, 0.2, 0.7, 0.1, 0.3]
+    time_max = [0.6, 0.2, 2, 0.3, 2]
+    phase_time = [0.6, 0.2, 1, 0.2, 0.6]
+    number_shooting_points = [30, 15, 20, 15, 30]
 
     tic = time()
 
@@ -536,7 +540,7 @@ if __name__ == "__main__":
         use_actuators=False,
     )
 
-    sol = ocp.solve(show_online_optim=True, solver_options={"hessian_approximation": "exact", "max_iter": 1000})
+    sol = ocp.solve(show_online_optim=True, solver_options={"hessian_approximation": "limited-memory", "max_iter": 1000})
 
 
 
