@@ -249,13 +249,17 @@ def prepare_ocp(
     )
 
     # Custom constraints for contact forces at transitions
-    constraints.add(from_2contacts_to_1, phase=1, node=Node.START)
-    constraints.add(from_1contact_to_0, phase=2, node=Node.START)
+    # constraints.add(from_2contacts_to_1, phase=1, node=Node.START)
+    # constraints.add(from_1contact_to_0, phase=2, node=Node.START)
     constraints.add(from_0contact_to_1, phase=3, node=Node.START)
     constraints.add(from_1contact_to_2, phase=4, node=Node.START)
 
     # Custom constraints for positivity of CoM_dot on z axis just before the take-off
     constraints.add(CoM_dot_Z_last_node_positivity, phase=1, node=Node.END, min_bound=0, max_bound=np.inf)
+
+    #Constraint arm positivity
+    constraints.add(Constraint.TRACK_STATE, phase=1, node=Node.END, index=3, min_bound=1.0, max_bound=np.inf)
+
 
     if not use_symmetry:
         raise NotImplementedError("Need to adapt to recent refactors")
@@ -517,7 +521,7 @@ if __name__ == "__main__":
         "../models/jumper1contacts.bioMod",
         "../models/jumper2contacts.bioMod",
     )
-    time_min = [0.6, 0.2, 0.7, 0.1, 0.3]
+    time_min = [0.6, 0.2, 0.7, 0.05, 0.3]
     time_max = [0.6, 0.2, 2, 0.3, 2]
     phase_time = [0.6, 0.2, 1, 0.2, 0.6]
     number_shooting_points = [30, 15, 20, 15, 30]
@@ -539,7 +543,7 @@ if __name__ == "__main__":
         use_actuators=False,
     )
 
-    sol = ocp.solve(show_online_optim=True, solver_options={"hessian_approximation": "limited-memory", "max_iter": 1000})
+    sol = ocp.solve(show_online_optim=True, solver_options={"hessian_approximation": "exact", "max_iter": 1000})
 
 
 
@@ -554,4 +558,4 @@ if __name__ == "__main__":
 
     result = ShowResult(ocp, sol)
     result.graphs(adapt_graph_size_to_bounds=True)
-    result.animate(nb_frames=61)
+    result.animate(nb_frames=121)
