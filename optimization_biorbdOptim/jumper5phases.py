@@ -2,7 +2,7 @@ from time import time
 
 import numpy as np
 import biorbd
-from casadi import vertcat, MX, Function
+from casadi import vertcat
 
 from bioptim import (
     Node,
@@ -19,11 +19,8 @@ from bioptim import (
     StateTransitionList,
     BoundsList,
     QAndQDotBounds,
-    InitialGuess,
     InitialGuessList,
-    InterpolationType,
     ShowResult,
-    Data,
     PlotType,
 )
 
@@ -38,44 +35,44 @@ def no_force_on_toe(ocp, nlp, t, x, u, p):
 
 def toe_on_floor(ocp, nlp, t, x, u, p):
     # floor = -0.77865438
-    nbQ_reduced = nlp.shape["q"]
-    q_reduced = nlp.X[0][:nbQ_reduced]
+    nb_q = nlp.shape["q"]
+    q_reduced = nlp.X[0][:nb_q]
     q = nlp.mapping["q"].expand.map(q_reduced)
     marker_func = biorbd.to_casadi_func("toe_on_floor", nlp.model.marker, nlp.q, 2)
-    toeD_marker_z = marker_func(q)[2]
-    return toeD_marker_z + 0.77865438
+    toe_marker_z = marker_func(q)[2]
+    return toe_marker_z + 0.77865438
 
 
 def heel_on_floor(ocp, nlp, t, x, u, p):
     # floor = -0.77865829
-    nbQ_reduced = nlp.shape["q"]
-    q_reduced = nlp.X[0][:nbQ_reduced]
+    nb_q = nlp.shape["q"]
+    q_reduced = nlp.X[0][:nb_q]
     q = nlp.mapping["q"].expand.map(q_reduced)
     marker_func = biorbd.to_casadi_func("heel_on_floor", nlp.model.marker, nlp.q, 3)
-    talD_marker_z = marker_func(q)[2]
-    return talD_marker_z + 0.77865829
+    tal_marker_z = marker_func(q)[2]
+    return tal_marker_z + 0.77865829
 
 
 def com_dot_z(ocp, nlp, t, x, u, p):
     q = nlp.mapping["q"].expand.map(x[0][: nlp.shape["q"]])
-    qdot = nlp.mapping["q"].expand.map(x[0][nlp.shape["q"] :])
-    CoM_dot_func = biorbd.to_casadi_func("Compute_CoM_dot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
+    q_dot = nlp.mapping["q"].expand.map(x[0][nlp.shape["q"]:])
+    com_dot_func = biorbd.to_casadi_func("Compute_CoM_dot", nlp.model.CoMdot, nlp.q, nlp.q_dot)
 
-    CoM_dot = CoM_dot_func(q, qdot)
-    return CoM_dot[2]
+    com_dot = com_dot_func(q, q_dot)
+    return com_dot[2]
 
 
 def tau_actuator_constraints(ocp, nlp, t, x, u, p):
     nq = nlp.mapping["q"].reduce.len
     q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
-    qdot = [nlp.mapping["q_dot"].expand.map(mx[nq:]) for mx in x]
+    q_dot = [nlp.mapping["q_dot"].expand.map(mx[nq:]) for mx in x]
 
     min_bound = []
     max_bound = []
 
     func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.q, nlp.q_dot)
     for i in range(len(u)):
-        bound = func(q[i], qdot[i])
+        bound = func(q[i], q_dot[i])
         min_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 1]))
         max_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 0]))
 
@@ -98,14 +95,14 @@ def plot_com(x, nlp):
 
 def plot_com_dot(x, nlp):
     q = nlp.mapping["q"].expand.map(x[:7, :])
-    qdot = nlp.mapping["q"].expand.map(x[7:, :])
+    q_dot = nlp.mapping["q"].expand.map(x[7:, :])
     com_dot_func = biorbd.to_casadi_func("Compute_CoM", nlp.model.CoMdot, nlp.q, nlp.q_dot)
-    return np.array(com_dot_func(q, qdot))[2]
+    return np.array(com_dot_func(q, q_dot))[2]
 
 
 def plot_torque_bounds(x, min_or_max, nlp):
     q = nlp.mapping["q"].expand.map(x[:7, :])
-    qdot = nlp.mapping["q"].expand.map(x[7:, :])
+    q_dot = nlp.mapping["q"].expand.map(x[7:, :])
     func = biorbd.to_casadi_func("TorqueMax", nlp.model.torqueMax, nlp.q, nlp.q_dot)
 
     res = []
@@ -113,16 +110,14 @@ def plot_torque_bounds(x, min_or_max, nlp):
         bound = []
 
         for i in range(len(x[0])):
-            tmp = func(q[:, i], qdot[:, i])
+            tmp = func(q[:, i], q_dot[:, i])
             bound.append(tmp[dof, min_or_max])
         res.append(np.array(bound))
 
     return np.array(res)
 
 
-def prepare_ocp(
-    model_path, phase_time, ns, time_min, time_max,
-):
+def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     # --- Options --- #
     # Model path
     biorbd_model = [biorbd.Model(elt) for elt in model_path]
@@ -158,40 +153,12 @@ def prepare_ocp(
     # Positivity constraints of the normal component of the reaction forces
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
-        constraints.add(
-            Constraint.CONTACT_FORCE,
-            phase=0,
-            node=Node.ALL,
-            contact_force_idx=i,
-            min_bound=0,
-            max_bound=np.inf,
-        )
-        constraints.add(
-            Constraint.CONTACT_FORCE,
-            phase=4,
-            node=Node.ALL,
-            contact_force_idx=i,
-            min_bound=0,
-            max_bound=np.inf,
-        )
+        constraints.add(Constraint.CONTACT_FORCE, phase=0, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
+        constraints.add(Constraint.CONTACT_FORCE, phase=4, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
     contact_axes = (1, 3)
     for i in contact_axes:
-        constraints.add(
-            Constraint.CONTACT_FORCE,
-            phase=1,
-            node=Node.ALL,
-            contact_force_idx=i,
-            min_bound=0,
-            max_bound=np.inf,
-        )
-        constraints.add(
-            Constraint.CONTACT_FORCE,
-            phase=3,
-            node=Node.ALL,
-            contact_force_idx=i,
-            min_bound=0,
-            max_bound=np.inf,
-        )
+        constraints.add(Constraint.CONTACT_FORCE, phase=1, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
+        constraints.add(Constraint.CONTACT_FORCE, phase=3, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
 
     # Non-slipping constraints
     # N.B.: Application on only one of the two feet is sufficient, as the slippage cannot occurs on only one foot.
@@ -243,7 +210,9 @@ def prepare_ocp(
     # Torque constraint + minimize_state
     for i in range(nb_phases):
         constraints.add(tau_actuator_constraints, phase=i, node=Node.ALL)
-        objective_functions.add(Objective.Mayer.MINIMIZE_TIME, weight=0.0001, phase=i, min_bound=time_min[i], max_bound=time_max[i])
+        objective_functions.add(
+            Objective.Mayer.MINIMIZE_TIME, weight=0.0001, phase=i, min_bound=time_min[i], max_bound=time_max[i]
+        )
         # objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
 
     # State transitions
@@ -253,20 +222,20 @@ def prepare_ocp(
 
     # Path constraint
     nb_q = q_mapping[0].reduce.len
-    nb_qdot = nb_q
+    nb_q_dot = nb_q
     pose_at_first_node = [0, 0, -0.5336, 1.4, 0.8, -0.9, 0.47]
 
     # Initialize x_bounds (Interpolation type is CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
     x_bounds = BoundsList()
     for i in range(nb_phases):
         x_bounds.add(QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_qdot
-    x_bounds[4][2:, -1] = pose_at_first_node[2:] + [0] * nb_qdot
+    x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_q_dot
+    x_bounds[4][2:, -1] = pose_at_first_node[2:] + [0] * nb_q_dot
 
     # Initial guess for states (Interpolation type is CONSTANT)
     x_init = InitialGuessList()
     for i in range(nb_phases):
-        x_init.add(pose_at_first_node + [0] * nb_qdot)
+        x_init.add(pose_at_first_node + [0] * nb_q_dot)
 
     # Define control path constraint
     u_bounds = BoundsList()
@@ -302,56 +271,34 @@ def prepare_ocp(
     for i in range(nb_phases):
         nlp = ocp.nlp[i]
         # Plot Torque Bounds
-        ocp.add_plot(
-            "tau",
-            lambda x, u, p: plot_torque_bounds(x, 0, nlp),
-            phase_number=i,
-            plot_type=PlotType.STEP,
-            color="g",
-        )
-        ocp.add_plot(
-            "tau",
-            lambda x, u, p: -plot_torque_bounds(x, 1, nlp),
-            phase_number=i,
-            plot_type=PlotType.STEP,
-            color="g",
-        )
+        ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp), phase=i, plot_type=PlotType.STEP, color="g")
+        ocp.add_plot("tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp), phase=i, plot_type=PlotType.STEP, color="g")
         # Plot CoM pos and speed
-        ocp.add_plot(
-            "CoM",
-            lambda x, u, p: plot_com(x, nlp),
-            phase_number=i,
-            plot_type=PlotType.PLOT,
-        )
-        ocp.add_plot(
-            "CoM_dot",
-            lambda x, u, p: plot_com_dot(x, nlp),
-            phase_number=i,
-            plot_type=PlotType.PLOT,
-        )
-        # Plot q and qdot ranges
+        ocp.add_plot("CoM", lambda x, u, p: plot_com(x, nlp), phase=i, plot_type=PlotType.PLOT)
+        ocp.add_plot("CoM_dot", lambda x, u, p: plot_com_dot(x, nlp), phase=i, plot_type=PlotType.PLOT)
+        # Plot q and nb_q_dot ranges
         ocp.add_plot(
             "q",
             lambda x, u, p: np.repeat(x_bounds[i].min[:nq, 1][:, np.newaxis], x.shape[1], axis=1),
-            phase_number=i,
+            phase=i,
             plot_type=PlotType.PLOT,
         )
         ocp.add_plot(
             "q",
             lambda x, u, p: np.repeat(x_bounds[i].max[:nq, 1][:, np.newaxis], x.shape[1], axis=1),
-            phase_number=i,
+            phase=i,
             plot_type=PlotType.PLOT,
         )
         ocp.add_plot(
             "q_dot",
             lambda x, u, p: np.repeat(x_bounds[i].min[nq:, 1][:, np.newaxis], x.shape[1], axis=1),
-            phase_number=i,
+            phase=i,
             plot_type=PlotType.PLOT,
         )
         ocp.add_plot(
             "q_dot",
             lambda x, u, p: np.repeat(x_bounds[i].max[nq:, 1][:, np.newaxis], x.shape[1], axis=1),
-            phase_number=i,
+            phase=i,
             plot_type=PlotType.PLOT,
         )
 
@@ -388,12 +335,15 @@ if __name__ == "__main__":
         time_max=time_max,
     )
 
-    sol = ocp.solve(show_online_optim=True, solver_options={"hessian_approximation": "limited-memory", "max_iter": 1000})
+    sol = ocp.solve(
+        show_online_optim=True, solver_options={"hessian_approximation": "limited-memory", "max_iter": 1000}
+    )
 
     # # --- Show results --- #
     # param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
     # print(
-    #     f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s, {param['time'][3, 0]}s and {param['time'][4, 0]}s."
+    #     f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s, "
+    #     f"{param['time'][3, 0]}s and {param['time'][4, 0]}s."
     # )
 
     toc = time() - tic
