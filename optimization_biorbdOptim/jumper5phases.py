@@ -102,8 +102,8 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     )
 
     # Custom constraints for contact forces at transitions
-    # constraints.add(no_force_on_heel, phase=1, node=Node.START)
-    # constraints.add(no_force_on_toe, phase=2, node=Node.START)
+    # constraints.add(utils.no_force_on_heel, phase=1, node=Node.START)
+    # constraints.add(utils.no_force_on_toe, phase=2, node=Node.START)
     constraints.add(utils.toe_on_floor, phase=3, node=Node.START)
     constraints.add(utils.heel_on_floor, phase=4, node=Node.START)
 
