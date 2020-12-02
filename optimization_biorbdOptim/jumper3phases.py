@@ -142,10 +142,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
         nb_threads=4,
         use_SX=False,
     )
-
-    ocp = utils.add_custom_plots(ocp, nb_phases, x_bounds, nq)
-
-    return ocp
+    return utils.add_custom_plots(ocp, nb_phases, x_bounds, nq)
 
 
 if __name__ == "__main__":
