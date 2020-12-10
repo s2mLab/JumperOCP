@@ -206,10 +206,21 @@ if __name__ == "__main__":
         time_max=time_max,
     )
 
-    for _ in range(6):
-        sol = ocp.solve(
-            show_online_optim=False, solver_options={"hessian_approximation": "limited-memory", "max_iter": 2}
-        )
+    for i in range(6):
+        if i == 0:
+            sol = ocp.solve(
+                show_online_optim=False,
+                solver_options={"hessian_approximation": "limited-memory", "max_iter": 2})
+        else:
+            sol = ocp.solve(
+                show_online_optim=False,
+                solver_options={"hessian_approximation": "limited-memory",
+                                "max_iter": 2,
+                                "warm_start_init_point": "yes",
+                                "warm_start_bound_push": 1e-10,
+                                "warm_start_mult_bound_push": 1e-10,
+                                "mu_init": 1e-10}
+            )
 
         ocp = utils.warm_start_nmpc(sol, ocp)
         ocp.solver.set_lagrange_multiplier(sol)
