@@ -3,7 +3,11 @@ import biorbd
 from casadi import vertcat
 
 from bioptim import (
+    Data,
     PlotType,
+    InitialGuessOption,
+    InitialGuessList,
+    InterpolationType,
 )
 
 
@@ -22,7 +26,7 @@ def toe_on_floor(ocp, nlp, t, x, u, p):
     q = nlp.mapping["q"].expand.map(q_reduced)
     marker_func = biorbd.to_casadi_func("toe_on_floor", nlp.model.marker, nlp.q, 2)
     toe_marker_z = marker_func(q)[2]
-    return toe_marker_z + 0.77865438
+    return -0.0001, toe_marker_z + 0.779, 0.0001
 
 
 def heel_on_floor(ocp, nlp, t, x, u, p):
@@ -32,7 +36,7 @@ def heel_on_floor(ocp, nlp, t, x, u, p):
     q = nlp.mapping["q"].expand.map(q_reduced)
     marker_func = biorbd.to_casadi_func("heel_on_floor", nlp.model.marker, nlp.q, 3)
     tal_marker_z = marker_func(q)[2]
-    return tal_marker_z + 0.77865829
+    return -0.0001, tal_marker_z + 0.779, 0.0001
 
 
 def com_dot_z(ocp, nlp, t, x, u, p):
@@ -133,4 +137,27 @@ def add_custom_plots(ocp, nb_phases, x_bounds, nq):
             phase=i,
             plot_type=PlotType.PLOT,
         )
+    return ocp
+
+
+def warm_start_nmpc(sol, ocp):
+    data_sol_prev = Data.get_data(ocp, sol, concatenate=False)
+    q = data_sol_prev[0]["q"]
+    dq = data_sol_prev[0]["q_dot"]
+    u = data_sol_prev[1]["tau"]
+    u_init = InitialGuessList()
+    x_init = InitialGuessList()
+    for i in range(5):
+        tmp = []
+        for dof_idx in range(4):
+            tmp.append(u[i][dof_idx][:len(u[i][dof_idx])-1])
+        u_init.add(tmp, interpolation=InterpolationType.EACH_FRAME)
+        tmp = []
+        for dof_idx in range(14):
+            if dof_idx < 7:
+                tmp.append(q[i][dof_idx][:])
+            else:
+                tmp.append(dq[i][dof_idx-7][:])
+        x_init.add(tmp, interpolation=InterpolationType.EACH_FRAME)
+    ocp.update_initial_guess(x_init, u_init)
     return ocp
