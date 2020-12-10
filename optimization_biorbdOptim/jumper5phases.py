@@ -43,7 +43,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1, phase=1)
+    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-100, phase=1)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -136,6 +136,13 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     for i in range(nb_phases):
         x_bounds.add(QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_q_dot
+
+    x_bounds[3].min[13, 0] = -1000
+    x_bounds[3].max[13, 0] = 1000
+
+    x_bounds[4].min[13, 0] = -1000
+    x_bounds[4].max[13, 0] = 1000
+
     x_bounds[4][2:, -1] = pose_at_first_node[2:] + [0] * nb_q_dot
 
     # Initial guess for states (Interpolation type is CONSTANT)
@@ -145,13 +152,13 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
 
     # Define control path constraint
     u_bounds = BoundsList()
-    for tau_m in tau_mapping:
-        u_bounds.add([[-500] * tau_m.reduce.len, [500] * tau_m.reduce.len])
+    for i in range(nb_phases):
+        u_bounds.add([[-500] * tau_mapping[i].reduce.len, [500] * tau_mapping[i].reduce.len])
 
     # Define initial guess for controls
     u_init = InitialGuessList()
-    for tau_m in tau_mapping:
-        u_init.add([0] * tau_m.reduce.len)  # Interpolation type is CONSTANT (default value)
+    for i in range(nb_phases):
+        u_init.add([0] * tau_mapping[i].reduce.len)  # Interpolation type is CONSTANT (default value)
 
     # ------------- #
 
@@ -184,8 +191,8 @@ if __name__ == "__main__":
         "../models/jumper1contacts.bioMod",
         "../models/jumper2contacts.bioMod",
     )
-    time_min = [0.77, 0.05, 0.05, 0.01, 0.05]
-    time_max = [0.77, 0.05, 2, 0.3, 1]
+    time_min = [0.4, 0.01, 0.05, 0.01, 0.01]
+    time_max = [1, 0.3, 2, 0.05, 1]
     phase_time = [0.6, 0.2, 1, 0.2, 0.6]
     number_shooting_points = [30, 15, 20, 15, 30]
 
@@ -199,9 +206,13 @@ if __name__ == "__main__":
         time_max=time_max,
     )
 
-    sol = ocp.solve(
-        show_online_optim=True, solver_options={"hessian_approximation": "exact", "max_iter": 1000}
-    )
+    for _ in range(6):
+        sol = ocp.solve(
+            show_online_optim=False, solver_options={"hessian_approximation": "limited-memory", "max_iter": 2}
+        )
+
+        ocp = utils.warm_start_nmpc(sol, ocp)
+        ocp.solver.set_lagrange_multiplier(sol)
 
     # # --- Show results --- #
     # param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
