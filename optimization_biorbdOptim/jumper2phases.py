@@ -149,8 +149,8 @@ if __name__ == "__main__":
         "../models/jumper2contacts.bioMod",
         "../models/jumper1contacts.bioMod",
     )
-    time_min = [0.77, 0.01]
-    time_max = [0.77, 0.1]
+    time_min = [0.6, 0.01]
+    time_max = [1, 0.3]
     phase_time = [0.77, 0.05]
     number_shooting_points = [30, 10]
 

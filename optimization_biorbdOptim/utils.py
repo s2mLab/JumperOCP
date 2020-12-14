@@ -1,12 +1,12 @@
 import numpy as np
 import biorbd
-from casadi import vertcat
 
 from bioptim import (
     Data,
     PlotType,
     InitialGuessOption,
     InitialGuessList,
+    InitialGuess,
     InterpolationType,
 )
 
@@ -141,10 +141,11 @@ def add_custom_plots(ocp, nb_phases, x_bounds, nq):
 
 
 def warm_start_nmpc(sol, ocp):
-    data_sol_prev = Data.get_data(ocp, sol, concatenate=False)
-    q = data_sol_prev[0]["q"]
-    dq = data_sol_prev[0]["q_dot"]
-    u = data_sol_prev[1]["tau"]
+    data_state, data_control, data_param = Data.get_data(ocp, sol, concatenate=False, get_parameters=True)
+    q = data_state["q"]
+    dq = data_state["q_dot"]
+    u = data_control["tau"]
+    time = data_param["time"]
     u_init = InitialGuessList()
     x_init = InitialGuessList()
     for i in range(5):
@@ -159,5 +160,6 @@ def warm_start_nmpc(sol, ocp):
             else:
                 tmp.append(dq[i][dof_idx-7][:])
         x_init.add(tmp, interpolation=InterpolationType.EACH_FRAME)
-    ocp.update_initial_guess(x_init, u_init)
+    time = {"time": InitialGuess(time)}
+    ocp.update_initial_guess(x_init=x_init, u_init=u_init, param_init=time)
     return ocp

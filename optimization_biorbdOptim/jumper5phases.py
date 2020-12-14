@@ -192,7 +192,7 @@ if __name__ == "__main__":
         "../models/jumper2contacts.bioMod",
     )
     time_min = [0.4, 0.01, 0.05, 0.01, 0.01]
-    time_max = [1, 0.3, 2, 0.05, 1]
+    time_max = [1, 0.3, 2, 0.2, 1]
     phase_time = [0.6, 0.2, 1, 0.2, 0.6]
     number_shooting_points = [30, 15, 20, 15, 30]
 
@@ -206,24 +206,23 @@ if __name__ == "__main__":
         time_max=time_max,
     )
 
-    for i in range(6):
-        if i == 0:
-            sol = ocp.solve(
-                show_online_optim=False,
-                solver_options={"hessian_approximation": "limited-memory", "max_iter": 2})
-        else:
-            sol = ocp.solve(
-                show_online_optim=False,
-                solver_options={"hessian_approximation": "limited-memory",
-                                "max_iter": 2,
-                                "warm_start_init_point": "yes",
-                                "warm_start_bound_push": 1e-10,
-                                "warm_start_mult_bound_push": 1e-10,
-                                "mu_init": 1e-10}
-            )
+    sol = ocp.solve(
+        show_online_optim=False,
+        solver_options={"hessian_approximation": "limited-memory", "max_iter": 500})
 
-        ocp = utils.warm_start_nmpc(sol, ocp)
-        ocp.solver.set_lagrange_multiplier(sol)
+    ocp = utils.warm_start_nmpc(sol, ocp)
+    ocp.solver.set_lagrange_multiplier(sol)
+
+    sol = ocp.solve(
+        show_online_optim=True,
+        solver_options={"hessian_approximation": "exact",
+                        "max_iter": 1000,
+                        "warm_start_init_point": "yes",
+                        # "warm_start_bound_push": 1e-10,
+                        # "warm_start_mult_bound_push": 1e-10,
+                        # "mu_init": 1e-10,
+                        }
+    )
 
     # # --- Show results --- #
     # param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
