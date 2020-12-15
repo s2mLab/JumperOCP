@@ -149,10 +149,10 @@ if __name__ == "__main__":
         "../models/jumper2contacts.bioMod",
         "../models/jumper1contacts.bioMod",
     )
-    time_min = [0.6, 0.01]
-    time_max = [1, 0.3]
+    time_min = [0.2, 0.05]
+    time_max = [1, 1]
     phase_time = [0.77, 0.05]
-    number_shooting_points = [30, 10]
+    number_shooting_points = [30, 30]
 
     tic = time()
 

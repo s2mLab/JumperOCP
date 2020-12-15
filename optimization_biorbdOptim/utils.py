@@ -111,14 +111,15 @@ def plot_torque_bounds(x, min_or_max, nlp, minimal_tau=None):
     return np.array(res)
 
 
-def add_custom_plots(ocp, nb_phases, x_bounds, nq):
+def add_custom_plots(ocp, nb_phases, x_bounds, nq, minimal_tau=None):
     for i in range(nb_phases):
         nlp = ocp.nlp[i]
         # Plot Torque Bounds
         ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp), phase=i, plot_type=PlotType.STEP, color="g")
         ocp.add_plot("tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp), phase=i, plot_type=PlotType.STEP, color="g")
-        ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp, minimal_tau=20), phase=i, plot_type=PlotType.STEP, color="g", linestyle="-.")
-        ocp.add_plot("tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp, minimal_tau=20), phase=i, plot_type=PlotType.STEP, color="g", linestyle="-.")
+        if minimal_tau:
+            ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp, minimal_tau=minimal_tau), phase=i, plot_type=PlotType.STEP, color="g", linestyle="-.")
+            ocp.add_plot("tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp, minimal_tau=minimal_tau), phase=i, plot_type=PlotType.STEP, color="g", linestyle="-.")
         # Plot CoM pos and speed
         ocp.add_plot("CoM", lambda x, u, p: plot_com(x, nlp), phase=i, plot_type=PlotType.PLOT)
         ocp.add_plot("CoM_dot", lambda x, u, p: plot_com_dot(x, nlp), phase=i, plot_type=PlotType.PLOT)
