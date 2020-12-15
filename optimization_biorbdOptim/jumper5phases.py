@@ -115,7 +115,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
 
     # Torque constraint + minimize_state
     for i in range(nb_phases):
-        constraints.add(utils.tau_actuator_constraints, phase=i, node=Node.ALL)
+        constraints.add(utils.tau_actuator_constraints, phase=i, node=Node.ALL, minimal_tau=20)
         objective_functions.add(
             Objective.Mayer.MINIMIZE_TIME, weight=0.0001, phase=i, min_bound=time_min[i], max_bound=time_max[i]
         )
