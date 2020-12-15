@@ -1,5 +1,6 @@
 import numpy as np
 import biorbd
+from casadi import if_else, lt, vertcat
 
 from bioptim import (
     Data,
@@ -48,7 +49,7 @@ def com_dot_z(ocp, nlp, t, x, u, p):
     return com_dot[2]
 
 
-def tau_actuator_constraints(ocp, nlp, t, x, u, p):
+def tau_actuator_constraints(ocp, nlp, t, x, u, p, minimal_tau=None):
     nq = nlp.mapping["q"].reduce.len
     q = [nlp.mapping["q"].expand.map(mx[:nq]) for mx in x]
     q_dot = [nlp.mapping["q_dot"].expand.map(mx[nq:]) for mx in x]
@@ -59,8 +60,12 @@ def tau_actuator_constraints(ocp, nlp, t, x, u, p):
     func = biorbd.to_casadi_func("torqueMax", nlp.model.torqueMax, nlp.q, nlp.q_dot)
     for i in range(len(u)):
         bound = func(q[i], q_dot[i])
-        min_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 1]))
-        max_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 0]))
+        if minimal_tau:
+            min_bound.append(nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 1], minimal_tau), minimal_tau, bound[:, 1])))
+            max_bound.append(nlp.mapping["tau"].reduce.map(if_else(lt(bound[:, 0], minimal_tau), minimal_tau, bound[:, 0])))
+        else:
+            min_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 1]))
+            max_bound.append(nlp.mapping["tau"].reduce.map(bound[:, 0]))
 
     obj = vertcat(*u)
     min_bound = vertcat(*min_bound)
@@ -86,7 +91,7 @@ def plot_com_dot(x, nlp):
     return np.array(com_dot_func(q, q_dot))[2]
 
 
-def plot_torque_bounds(x, min_or_max, nlp):
+def plot_torque_bounds(x, min_or_max, nlp, minimal_tau=None):
     q = nlp.mapping["q"].expand.map(x[:7, :])
     q_dot = nlp.mapping["q"].expand.map(x[7:, :])
     func = biorbd.to_casadi_func("TorqueMax", nlp.model.torqueMax, nlp.q, nlp.q_dot)
@@ -97,7 +102,10 @@ def plot_torque_bounds(x, min_or_max, nlp):
 
         for i in range(len(x[0])):
             tmp = func(q[:, i], q_dot[:, i])
-            bound.append(tmp[dof, min_or_max])
+            if minimal_tau and tmp[dof, min_or_max] < minimal_tau:
+                bound.append(minimal_tau)
+            else:
+                bound.append(tmp[dof, min_or_max])
         res.append(np.array(bound))
 
     return np.array(res)
@@ -109,6 +117,8 @@ def add_custom_plots(ocp, nb_phases, x_bounds, nq):
         # Plot Torque Bounds
         ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp), phase=i, plot_type=PlotType.STEP, color="g")
         ocp.add_plot("tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp), phase=i, plot_type=PlotType.STEP, color="g")
+        ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp, minimal_tau=20), phase=i, plot_type=PlotType.STEP, color="g", linestyle="-.")
+        ocp.add_plot("tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp, minimal_tau=20), phase=i, plot_type=PlotType.STEP, color="g", linestyle="-.")
         # Plot CoM pos and speed
         ocp.add_plot("CoM", lambda x, u, p: plot_com(x, nlp), phase=i, plot_type=PlotType.PLOT)
         ocp.add_plot("CoM_dot", lambda x, u, p: plot_com_dot(x, nlp), phase=i, plot_type=PlotType.PLOT)
