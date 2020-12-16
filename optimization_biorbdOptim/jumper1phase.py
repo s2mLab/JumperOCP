@@ -2,7 +2,6 @@ from time import time
 
 import numpy as np
 import biorbd
-from casadi import vertcat
 from bioptim import (
     Node,
     OptimalControlProgram,
@@ -11,17 +10,13 @@ from bioptim import (
     Objective,
     ObjectiveList,
     DynamicsTypeList,
-    DynamicsFunctions,
     DynamicsType,
     BidirectionalMapping,
     Mapping,
     BoundsList,
     QAndQDotBounds,
-    InitialGuess,
     InitialGuessList,
-    InterpolationType,
     ShowResult,
-    Data,
 )
 
 import utils
@@ -79,13 +74,12 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
 
     # Torque constraint + minimize_state
     for i in range(nb_phases):
-        constraints.add(utils.tau_actuator_constraints, phase=i, node=Node.ALL)
+        constraints.add(utils.tau_actuator_constraints, phase=i, node=Node.ALL, minimal_tau=20)
         objective_functions.add(
             Objective.Mayer.MINIMIZE_TIME, weight=0.0001, phase=i, min_bound=time_min[i], max_bound=time_max[i]
         )
-        # objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
 
-    # --- Path constraints --- #
+    # Path constraint
     nb_q = q_mapping.reduce.len
     nb_q_dot = nb_q
     pose_at_first_node = [0, 0, -0.5336, 1.4, 0.8, -0.9, 0.47]
@@ -107,7 +101,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
 
     # Define initial guess for controls
     u_init = InitialGuessList()
-    u_init.add([0] * tau_mapping.reduce.len)  # Interpolation type is CONSTANT (default value)
+    u_init.add([0] * tau_mapping.reduce.len)
 
     # ------------- #
 
@@ -128,14 +122,16 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
         nb_threads=4,
         use_SX=False,
     )
-    return utils.add_custom_plots(ocp, nb_phases, x_bounds, nq)
+    return utils.add_custom_plots(ocp, nb_phases, x_bounds, nq, minimal_tau=20)
 
 
 if __name__ == "__main__":
-    model_path = ("../models/jumper2contacts.bioMod",)
-    time_min = [0.4]
+    model_path = (
+        "../models/jumper2contacts.bioMod",
+    )
+    time_min = [0.2]
     time_max = [1]
-    phase_time = 0.6
+    phase_time = [0.6]
     number_shooting_points = 30
 
     tic = time()
@@ -149,17 +145,23 @@ if __name__ == "__main__":
     )
 
     sol = ocp.solve(
-        show_online_optim=True, solver_options={"hessian_approximation": "exact", "max_iter": 1000}
+        show_online_optim=False,
+        solver_options={"hessian_approximation": "limited-memory", "max_iter": 500}
     )
 
-    # --- Show results --- #
-    # param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
-    # print(
-    #     f"The optimized phase time are: {param['time'][0, 0]}s."
-    # )
+    ocp = utils.warm_start_nmpc(sol, ocp)
+    ocp.solver.set_lagrange_multiplier(sol)
+
+    sol = ocp.solve(
+        show_online_optim=True,
+        solver_options={"hessian_approximation": "exact",
+                        "max_iter": 1000,
+                        "warm_start_init_point": "yes",
+                        }
+    )
 
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
     result = ShowResult(ocp, sol)
-    result.animate(nb_frames=121)
+    result.animate(nb_frames=241)

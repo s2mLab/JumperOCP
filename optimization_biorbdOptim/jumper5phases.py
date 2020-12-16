@@ -102,8 +102,6 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     )
 
     # Custom constraints for contact forces at transitions
-    # constraints.add(utils.no_force_on_heel, phase=1, node=Node.START)
-    # constraints.add(utils.no_force_on_toe, phase=2, node=Node.START)
     constraints.add(utils.toe_on_floor, phase=3, node=Node.START)
     constraints.add(utils.heel_on_floor, phase=4, node=Node.START)
 
@@ -119,7 +117,6 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
         objective_functions.add(
             Objective.Mayer.MINIMIZE_TIME, weight=0.0001, phase=i, min_bound=time_min[i], max_bound=time_max[i]
         )
-        # objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
 
     # State transitions
     state_transitions = StateTransitionList()
@@ -158,7 +155,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     # Define initial guess for controls
     u_init = InitialGuessList()
     for i in range(nb_phases):
-        u_init.add([0] * tau_mapping[i].reduce.len)  # Interpolation type is CONSTANT (default value)
+        u_init.add([0] * tau_mapping[i].reduce.len)
 
     # ------------- #
 
@@ -208,7 +205,8 @@ if __name__ == "__main__":
 
     sol = ocp.solve(
         show_online_optim=False,
-        solver_options={"hessian_approximation": "limited-memory", "max_iter": 500})
+        solver_options={"hessian_approximation": "limited-memory", "max_iter": 500}
+    )
 
     ocp = utils.warm_start_nmpc(sol, ocp)
     ocp.solver.set_lagrange_multiplier(sol)
@@ -218,21 +216,11 @@ if __name__ == "__main__":
         solver_options={"hessian_approximation": "exact",
                         "max_iter": 1000,
                         "warm_start_init_point": "yes",
-                        # "warm_start_bound_push": 1e-10,
-                        # "warm_start_mult_bound_push": 1e-10,
-                        # "mu_init": 1e-10,
                         }
     )
-
-    # # --- Show results --- #
-    # param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
-    # print(
-    #     f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s, "
-    #     f"{param['time'][3, 0]}s and {param['time'][4, 0]}s."
-    # )
 
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
     result = ShowResult(ocp, sol)
-    result.animate(nb_frames=121)
+    result.animate(nb_frames=241)

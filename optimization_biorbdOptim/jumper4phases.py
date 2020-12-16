@@ -43,7 +43,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1, phase=1)
+    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-100, phase=1)
 
     # Dynamics
     dynamics = DynamicsTypeList()
@@ -92,8 +92,6 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     )
 
     # Custom constraints for contact forces at transitions
-    # constraints.add(utils.no_force_on_heel, phase=1, node=Node.START)
-    # constraints.add(utils.no_force_on_toe, phase=2, node=Node.START)
     constraints.add(utils.toe_on_floor, phase=3, node=Node.START)
     constraints.add(utils.heel_on_floor, phase=3, node=Node.START)
 
@@ -105,11 +103,10 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
 
     # Torque constraint + minimize_state
     for i in range(nb_phases):
-        constraints.add(utils.tau_actuator_constraints, phase=i, node=Node.ALL)
+        constraints.add(utils.tau_actuator_constraints, phase=i, node=Node.ALL, minimal_tau=20)
         objective_functions.add(
             Objective.Mayer.MINIMIZE_TIME, weight=0.0001, phase=i, min_bound=time_min[i], max_bound=time_max[i]
         )
-        # objective_functions.add(Objective.Lagrange.MINIMIZE_STATE, weight=0.0001, phase=i)
 
     # State transitions
     state_transitions = StateTransitionList()
@@ -125,6 +122,10 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     for i in range(nb_phases):
         x_bounds.add(QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_q_dot
+
+    x_bounds[3].min[13, 0] = -1000
+    x_bounds[3].max[13, 0] = 1000
+
     x_bounds[3][2:, -1] = pose_at_first_node[2:] + [0] * nb_q_dot
 
     # Initial guess for states (Interpolation type is CONSTANT)
@@ -134,13 +135,13 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
 
     # Define control path constraint
     u_bounds = BoundsList()
-    for tau_m in tau_mapping:
-        u_bounds.add([[-500] * tau_m.reduce.len, [500] * tau_m.reduce.len])
+    for i in range(nb_phases):
+        u_bounds.add([[-500] * tau_mapping[i].reduce.len, [500] * tau_mapping[i].reduce.len])
 
     # Define initial guess for controls
     u_init = InitialGuessList()
-    for tau_m in tau_mapping:
-        u_init.add([0] * tau_m.reduce.len)  # Interpolation type is CONSTANT (default value)
+    for i in range(nb_phases):
+        u_init.add([0] * tau_mapping[i].reduce.len)
 
     # ------------- #
 
@@ -162,7 +163,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
         nb_threads=4,
         use_SX=False,
     )
-    return utils.add_custom_plots(ocp, nb_phases, x_bounds, nq)
+    return utils.add_custom_plots(ocp, nb_phases, x_bounds, nq, minimal_tau=20)
 
 
 if __name__ == "__main__":
@@ -172,8 +173,8 @@ if __name__ == "__main__":
         "../models/jumper1contacts.bioMod",
         "../models/jumper2contacts.bioMod",
     )
-    time_min = [0.77, 0.05, 0.05, 0.05]
-    time_max = [0.77, 0.05, 2, 1]
+    time_min = [0.2, 0.05, 0.05, 0.01]
+    time_max = [1, 1, 2, 1.2]
     phase_time = [0.6, 0.2, 1, 0.6]
     number_shooting_points = [30, 15, 20, 30]
 
@@ -188,18 +189,23 @@ if __name__ == "__main__":
     )
 
     sol = ocp.solve(
-        show_online_optim=True, solver_options={"hessian_approximation": "exact", "max_iter": 1000}
+        show_online_optim=False,
+        solver_options={"hessian_approximation": "limited-memory", "max_iter": 500}
     )
 
-    # # --- Show results --- #
-    # param = Data.get_data(ocp, sol["x"], get_states=False, get_controls=False, get_parameters=True)
-    # print(
-    #     f"The optimized phases times are: {param['time'][0, 0]}s, {param['time'][1, 0]}s, {param['time'][2, 0]}s, "
-    #     f"{param['time'][3, 0]}s and {param['time'][4, 0]}s."
-    # )
+    ocp = utils.warm_start_nmpc(sol, ocp)
+    ocp.solver.set_lagrange_multiplier(sol)
+
+    sol = ocp.solve(
+        show_online_optim=True,
+        solver_options={"hessian_approximation": "exact",
+                        "max_iter": 1000,
+                        "warm_start_init_point": "yes",
+                        }
+    )
 
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
     result = ShowResult(ocp, sol)
-    result.animate(nb_frames=121)
+    result.animate(nb_frames=241)
