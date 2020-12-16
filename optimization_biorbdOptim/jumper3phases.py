@@ -41,7 +41,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1, phase=1)
+    objective_functions.add(Objective.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-100, phase=1)
 
     # Dynamics
     dynamics = DynamicsTypeList()

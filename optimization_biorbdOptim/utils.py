@@ -111,9 +111,14 @@ def plot_torque_bounds(x, min_or_max, nlp, minimal_tau=None):
     return np.array(res)
 
 
+def plot_sum_contact_forces(x, u, p, nlp):
+    return nlp.contact_forces_func(x, u, p)
+
+
 def add_custom_plots(ocp, nb_phases, x_bounds, nq, minimal_tau=None):
     for i in range(nb_phases):
         nlp = ocp.nlp[i]
+        ocp.add_plot("sum_contact_forces", lambda x, u, p: plot_sum_contact_forces(x, u, p, nlp), phase=i)
         # Plot Torque Bounds
         if not minimal_tau:
             ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp), phase=i, plot_type=PlotType.STEP, color="g")
@@ -162,7 +167,7 @@ def warm_start_nmpc(sol, ocp):
     time = data_param["time"]
     u_init = InitialGuessList()
     x_init = InitialGuessList()
-    for i in range(5):
+    for i in range(ocp.nb_phases):
         tmp = []
         for dof_idx in range(4):
             tmp.append(u[i][dof_idx][:len(u[i][dof_idx])-1])
