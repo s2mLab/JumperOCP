@@ -84,6 +84,9 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     # Constraint arm positivity
     constraints.add(Constraint.TRACK_STATE, phase=1, node=Node.END, index=3, min_bound=1.0, max_bound=np.inf)
 
+    # Constraint foot positivity
+    constraints.add(utils.heel_on_floor, phase=1, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
+
     # Torque constraint + minimize_state
     for i in range(nb_phases):
         constraints.add(utils.tau_actuator_constraints, phase=i, node=Node.ALL, minimal_tau=20)
@@ -161,7 +164,7 @@ if __name__ == "__main__":
 
     sol = ocp.solve(
         show_online_optim=False,
-        solver_options={"hessian_approximation": "limited-memory", "max_iter": 500}
+        solver_options={"hessian_approximation": "limited-memory", "max_iter": 200}
     )
 
     ocp = utils.warm_start_nmpc(sol, ocp)

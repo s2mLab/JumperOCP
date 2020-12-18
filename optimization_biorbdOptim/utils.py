@@ -27,7 +27,7 @@ def toe_on_floor(ocp, nlp, t, x, u, p):
     q = nlp.mapping["q"].expand.map(q_reduced)
     marker_func = biorbd.to_casadi_func("toe_on_floor", nlp.model.marker, nlp.q, 2)
     toe_marker_z = marker_func(q)[2]
-    return -0.0001, toe_marker_z + 0.779, 0.0001
+    return toe_marker_z + 0.779
 
 
 def heel_on_floor(ocp, nlp, t, x, u, p):
@@ -37,7 +37,7 @@ def heel_on_floor(ocp, nlp, t, x, u, p):
     q = nlp.mapping["q"].expand.map(q_reduced)
     marker_func = biorbd.to_casadi_func("heel_on_floor", nlp.model.marker, nlp.q, 3)
     tal_marker_z = marker_func(q)[2]
-    return -0.0001, tal_marker_z + 0.779, 0.0001
+    return tal_marker_z + 0.779
 
 
 def com_dot_z(ocp, nlp, t, x, u, p):
@@ -112,13 +112,15 @@ def plot_torque_bounds(x, min_or_max, nlp, minimal_tau=None):
 
 
 def plot_sum_contact_forces(x, u, p, nlp):
-    return nlp.contact_forces_func(x, u, p)
+    if nlp.contact_forces_func:
+        return nlp.contact_forces_func(x, u, p)
+    else:
+        return np.zeros((20, 1))
 
 
 def add_custom_plots(ocp, nb_phases, x_bounds, nq, minimal_tau=None):
     for i in range(nb_phases):
         nlp = ocp.nlp[i]
-        ocp.add_plot("sum_contact_forces", lambda x, u, p: plot_sum_contact_forces(x, u, p, nlp), phase=i)
         # Plot Torque Bounds
         if not minimal_tau:
             ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp), phase=i, plot_type=PlotType.STEP, color="g")
