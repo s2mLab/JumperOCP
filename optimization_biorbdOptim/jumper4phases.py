@@ -92,14 +92,19 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     )
 
     # Custom constraints for contact forces at transitions
-    constraints.add(utils.toe_on_floor, phase=3, node=Node.START)
-    constraints.add(utils.heel_on_floor, phase=3, node=Node.START)
+    constraints.add(utils.toe_on_floor, phase=3, node=Node.START, min_bound=-0.0001, max_bound=0.0001)
+    constraints.add(utils.heel_on_floor, phase=3, node=Node.START, min_bound=-0.0001, max_bound=0.0001)
 
     # Custom constraints for positivity of CoM_dot on z axis just before the take-off
     constraints.add(utils.com_dot_z, phase=1, node=Node.END, min_bound=0, max_bound=np.inf)
 
     # Constraint arm positivity
     constraints.add(Constraint.TRACK_STATE, phase=1, node=Node.END, index=3, min_bound=1.0, max_bound=np.inf)
+
+    # Constraint foot positivity
+    constraints.add(utils.heel_on_floor, phase=1, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
+    constraints.add(utils.heel_on_floor, phase=2, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
+    constraints.add(utils.toe_on_floor, phase=2, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
 
     # Torque constraint + minimize_state
     for i in range(nb_phases):
@@ -190,7 +195,7 @@ if __name__ == "__main__":
 
     sol = ocp.solve(
         show_online_optim=False,
-        solver_options={"hessian_approximation": "limited-memory", "max_iter": 500}
+        solver_options={"hessian_approximation": "limited-memory", "max_iter": 200}
     )
 
     ocp = utils.warm_start_nmpc(sol, ocp)

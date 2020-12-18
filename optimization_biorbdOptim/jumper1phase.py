@@ -146,7 +146,7 @@ if __name__ == "__main__":
 
     sol = ocp.solve(
         show_online_optim=False,
-        solver_options={"hessian_approximation": "limited-memory", "max_iter": 500}
+        solver_options={"hessian_approximation": "limited-memory", "max_iter": 200}
     )
 
     ocp = utils.warm_start_nmpc(sol, ocp)
