@@ -96,15 +96,21 @@ torque_evolution2 = {f"{name[i]}": torque2[1][i] / torque2[0][i] * 100 for i in 
 
 tau_from_id_qdot_null_0 = m.InverseDynamics(q0, qdot_null, np.zeros((13,)), None).to_array()
 tau_no_root_0 = copy(tau_from_id_qdot_null_0)
-tau_no_root_0[:3,] = 0
+tau_no_root_0[
+    :3,
+] = 0
 
 tau_from_id_qdot_null_1 = m.InverseDynamics(q1, qdot_null, np.zeros((13,)), None).to_array()
 tau_no_root_1 = copy(tau_from_id_qdot_null_1)
-tau_no_root_1[:3,] = 0
+tau_no_root_1[
+    :3,
+] = 0
 
 tau_from_id_qdot_null_2 = m.InverseDynamics(q2, qdot_null, np.zeros((13,)), None).to_array()
 tau_no_root_2 = copy(tau_from_id_qdot_null_2)
-tau_no_root_2[:3,] = 0
+tau_no_root_2[
+    :3,
+] = 0
 
 
 cs_0 = m.getConstraints()

@@ -8,7 +8,9 @@ def computeTorqueMaxAndForces(q, qdot):
     torqueMax = m.torque(torque_act, q, qdot).to_array()
 
     tau_no_root = copy(torqueMax)
-    tau_no_root[:3,] = 0
+    tau_no_root[
+        :3,
+    ] = 0
     cs = m.getConstraints()
 
     qddot_with_v = m.ForwardDynamicsConstraintsDirect(q, qdot, tau_no_root, cs).to_array()
