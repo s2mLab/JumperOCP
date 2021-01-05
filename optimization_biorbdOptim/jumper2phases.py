@@ -136,7 +136,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
         q_mapping=q_mapping,
         q_dot_mapping=q_mapping,
         tau_mapping=tau_mapping,
-        nb_threads=4,
+        nb_threads=8,
         use_SX=False,
     )
     return utils.add_custom_plots(ocp, nb_phases, x_bounds, nq, minimal_tau=20)
@@ -164,10 +164,10 @@ if __name__ == "__main__":
 
     sol = ocp.solve(
         show_online_optim=False,
-        solver_options={"hessian_approximation": "limited-memory", "max_iter": 200}
+        solver_options={"hessian_approximation": "limited-memory", "max_iter": 2}
     )
 
-    ocp = utils.warm_start_nmpc(sol, ocp)
+    utils.warm_start_nmpc(sol, ocp)
     ocp.solver.set_lagrange_multiplier(sol)
 
     sol = ocp.solve(

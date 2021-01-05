@@ -162,25 +162,14 @@ def add_custom_plots(ocp, nb_phases, x_bounds, nq, minimal_tau=None):
 
 
 def warm_start_nmpc(sol, ocp):
-    data_state, data_control, data_param = Data.get_data(ocp, sol, concatenate=False, get_parameters=True)
-    q = data_state["q"]
-    dq = data_state["q_dot"]
-    u = data_control["tau"]
-    time = data_param["time"]
+    state, ctrl, param = Data.get_data(ocp, sol, concatenate=False, get_parameters=True)
     u_init = InitialGuessList()
     x_init = InitialGuessList()
     for i in range(ocp.nb_phases):
-        tmp = []
-        for dof_idx in range(4):
-            tmp.append(u[i][dof_idx][:len(u[i][dof_idx])-1])
-        u_init.add(tmp, interpolation=InterpolationType.EACH_FRAME)
-        tmp = []
-        for dof_idx in range(14):
-            if dof_idx < 7:
-                tmp.append(q[i][dof_idx][:])
-            else:
-                tmp.append(dq[i][dof_idx-7][:])
-        x_init.add(tmp, interpolation=InterpolationType.EACH_FRAME)
+        u_init.add(np.concatenate([ctrl[d][i][:, :-1] for d in ctrl]), interpolation=InterpolationType.EACH_FRAME)
+        x_init.add(np.concatenate([state[d][i] for d in state]), interpolation=InterpolationType.EACH_FRAME)
+
+    time = param["time"]
     time = {"time": InitialGuess(time)}
     ocp.update_initial_guess(x_init=x_init, u_init=u_init, param_init=time)
-    return ocp
+
