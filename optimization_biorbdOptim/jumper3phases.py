@@ -22,7 +22,7 @@ from bioptim import (
 import utils
 
 
-def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
+def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     # --- Options --- #
     # Model path
     biorbd_model = [biorbd.Model(elt) for elt in model_path]
@@ -121,7 +121,10 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
     # Define initial guess for controls
     u_init = InitialGuessList()
     for i in range(nb_phases):
-        u_init.add([0] * tau_mapping[i].reduce.len)
+        if init is not None:
+            u_init.add([init[i]] * tau_mapping[i].reduce.len)
+        else:
+            u_init.add([0] * tau_mapping[i].reduce.len)
 
     # ------------- #
 
@@ -139,13 +142,13 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max):
         q_mapping=q_mapping,
         q_dot_mapping=q_mapping,
         tau_mapping=tau_mapping,
-        nb_threads=4,
+        nb_threads=2,
         use_SX=False,
     )
     return utils.add_custom_plots(ocp, nb_phases, x_bounds, nq, minimal_tau=20)
 
-
-if __name__ == "__main__":
+def main(init=None):
+    save_path = "3p_init_"+str(init[0])+"_"+str(init[1])+"_"+str(init[2])+"_sol.bo"
     model_path = (
         "../models/jumper2contacts.bioMod",
         "../models/jumper1contacts.bioMod",
@@ -164,6 +167,8 @@ if __name__ == "__main__":
         ns=number_shooting_points,
         time_min=time_min,
         time_max=time_max,
+        init=init,
+        nb_threads=nb_threads,
     )
 
     sol = ocp.solve(
@@ -175,7 +180,7 @@ if __name__ == "__main__":
     ocp.solver.set_lagrange_multiplier(sol)
 
     sol = ocp.solve(
-        show_online_optim=True,
+        show_online_optim=False,
         solver_options={"hessian_approximation": "exact",
                         "max_iter": 1000,
                         "warm_start_init_point": "yes",
@@ -185,5 +190,10 @@ if __name__ == "__main__":
     toc = time() - tic
     print(f"Time to solve : {toc}sec")
 
-    result = ShowResult(ocp, sol)
-    result.animate(nb_frames=241)
+    if init:
+        ocp.save(sol, save_path)
+        ocp.save_get_data(sol, save_path + "b")
+
+
+if __name__ == "__main__":
+    main()
