@@ -1,4 +1,5 @@
 from time import time
+import os.path
 
 import numpy as np
 import biorbd
@@ -122,7 +123,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     u_init = InitialGuessList()
     for i in range(nb_phases):
         if init is not None:
-            u_init.add([init[i]] * tau_mapping[i].reduce.len)
+            u_init.add([init[i] * 500] * tau_mapping[i].reduce.len)
         else:
             u_init.add([0] * tau_mapping[i].reduce.len)
 
@@ -147,8 +148,15 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     )
     return utils.add_custom_plots(ocp, nb_phases, x_bounds, nq, minimal_tau=20)
 
-def main(init=None):
-    save_path = "3p_init_"+str(init[0])+"_"+str(init[1])+"_"+str(init[2])+"_sol.bo"
+def main(args=None):
+    init = None
+    if args:
+        save_path = "3p_init_"+str(init[0])+"_"+str(init[1])+"_"+str(init[2])+"_sol.bo"
+        if os.path.exists(save_path):
+            return
+        init = args[:-1]
+        pwd = args[-1]
+
     model_path = (
         "../models/jumper2contacts.bioMod",
         "../models/jumper1contacts.bioMod",
@@ -168,7 +176,6 @@ def main(init=None):
         time_min=time_min,
         time_max=time_max,
         init=init,
-        nb_threads=nb_threads,
     )
 
     sol = ocp.solve(
@@ -192,7 +199,11 @@ def main(init=None):
 
     if init:
         ocp.save(sol, save_path)
-        ocp.save_get_data(sol, save_path + "b")
+        ocp.save_get_data(sol, save_path + 'b')
+        import scp
+        client = scp.Client(host='pariterre.net', user='aws', password=pwd)
+        client.transfer(save_path, '/home/aws/')
+        client.transfer(save_path + 'b', '/home/aws/')
 
 
 if __name__ == "__main__":

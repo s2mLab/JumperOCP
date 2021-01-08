@@ -180,6 +180,7 @@ def warm_start_nmpc(sol, ocp):
             else:
                 tmp.append(dq[i][dof_idx-7][:])
         x_init.add(tmp, interpolation=InterpolationType.EACH_FRAME)
+
     time = InitialGuessOption(time, name="time")
     ocp.update_initial_guess(x_init=x_init, u_init=u_init, param_init=time)
     return ocp
