@@ -5,7 +5,7 @@ from casadi import if_else, lt, vertcat
 from bioptim import (
     Data,
     PlotType,
-    InitialGuessOption,
+    InitialGuess,
     InitialGuessList,
     InterpolationType,
 )
@@ -168,6 +168,6 @@ def warm_start_nmpc(sol, ocp):
         u_init.add(np.concatenate([ctrl[d][i][:, :-1] for d in ctrl]), interpolation=InterpolationType.EACH_FRAME)
         x_init.add(np.concatenate([state[d][i] for d in state]), interpolation=InterpolationType.EACH_FRAME)
 
-    time = InitialGuessOption(param["time"], name="time")
+    time = InitialGuess(param["time"], name="time")
     ocp.update_initial_guess(x_init=x_init, u_init=u_init, param_init=time)
 
