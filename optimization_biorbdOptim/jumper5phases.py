@@ -226,7 +226,7 @@ def main(args=None):
         solver_options={"hessian_approximation": "limited-memory", "max_iter": 200}
     )
 
-    ocp = utils.warm_start_nmpc(sol, ocp)
+    utils.warm_start_nmpc(sol, ocp)
     ocp.solver.set_lagrange_multiplier(sol)
 
     sol = ocp.solve(
