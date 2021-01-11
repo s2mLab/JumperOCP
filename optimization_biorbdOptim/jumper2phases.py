@@ -1,5 +1,7 @@
 from time import time
 import os.path
+from scp import SCPClient
+from paramiko import SSHClient
 
 import numpy as np
 import biorbd
@@ -120,7 +122,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     u_init = InitialGuessList()
     for i in range(nb_phases):
         if init is not None:
-            u_init.add([init[i] * 500] * tau_mapping[i].reduce.len)
+            u_init.add(init)
         else:
             u_init.add([0] * tau_mapping[i].reduce.len)
 
@@ -148,11 +150,11 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
 def main(args=None):
     init = None
     if args:
-        save_path = '2p_init_'+str(init[0])+'_'+str(init[1])+'_sol.bo'
-        if os.path.exists(save_path):
-            return
         init = args[:-1]
         pwd = args[-1]
+        save_path = "2p_init_"+str(init[0])+"_"+str(init[1])+"_"+str(init[2])+"_"+str(init[3])+"_sol.bo"
+        if os.path.exists(save_path):
+            return
 
     model_path = (
         "../models/jumper2contacts.bioMod",
@@ -196,10 +198,14 @@ def main(args=None):
     if init:
         ocp.save(sol, save_path)
         ocp.save_get_data(sol, save_path + 'b')
-        import scp
-        client = scp.Client(host='pariterre.net', user='aws', password=pwd)
-        client.transfer(save_path, '/home/aws/')
-        client.transfer(save_path + 'b', '/home/aws/')
+        ssh = SSHClient()
+        ssh.load_system_host_keys()
+        ssh.connect('pariterre.net', username='aws', password=pwd)
+        with SCPClient(ssh.get_transport()) as scp:
+            scp.put(save_path, save_path)
+            scp.get(save_path)
+            scp.put(save_path + 'b', save_path + 'b')
+            scp.get(save_path + 'b')
 
 
 if __name__ == "__main__":

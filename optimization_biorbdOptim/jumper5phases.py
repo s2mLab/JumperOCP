@@ -163,7 +163,7 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     u_init = InitialGuessList()
     for i in range(nb_phases):
         if init is not None:
-            u_init.add([init[i] * 500] * tau_mapping[i].reduce.len)
+            u_init.add(init)
         else:
             u_init.add([0] * tau_mapping[i].reduce.len)
 
@@ -192,11 +192,11 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
 def main(args=None):
     init = None
     if args:
-        save_path = "5p_init_"+str(init[0])+"_"+str(init[1])+"_"+str(init[2])+"_"+str(init[3])+"_"+str(init[4])+"_sol.bo"
-        if os.path.exists(save_path):
-            return
         init = args[:-1]
         pwd = args[-1]
+        save_path = "5p_init_"+str(init[0])+"_"+str(init[1])+"_"+str(init[2])+"_"+str(init[3])+"_sol.bo"
+        if os.path.exists(save_path):
+            return
 
     model_path = (
         "../models/jumper2contacts.bioMod",
