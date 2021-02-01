@@ -88,7 +88,10 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     constraints.add(ConstraintFcn.TRACK_STATE, phase=1, node=Node.END, index=3, min_bound=1.0, max_bound=np.inf)
 
     # Constraint foot positivity
+    constraints.add(utils.heel_on_floor, phase=0, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
     constraints.add(utils.heel_on_floor, phase=1, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
+    constraints.add(utils.toe_on_floor, phase=0, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
+    constraints.add(utils.toe_on_floor, phase=1, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
 
     # Torque constraint + minimize_state
     for i in range(nb_phases):
@@ -161,7 +164,7 @@ def main(args=None):
         "../models/jumper1contacts.bioMod",
     )
     time_min = [0.2, 0.05]
-    time_max = [1, 1]
+    time_max = [0.5, 1]
     phase_time = [0.6, 0.2]
     number_shooting_points = [30, 15]
 
@@ -185,7 +188,7 @@ def main(args=None):
     ocp.solver.set_lagrange_multiplier(sol)
 
     sol = ocp.solve(
-        show_online_optim=False,
+        show_online_optim=True,
         solver_options={"hessian_approximation": "exact",
                         "max_iter": 1000,
                         "warm_start_init_point": "yes",
@@ -206,6 +209,9 @@ def main(args=None):
             scp.get(save_path)
             scp.put(save_path + 'b', save_path + 'b')
             scp.get(save_path + 'b')
+
+    result = ShowResult(ocp, sol)
+    result.animate(nb_frames=241)
 
 
 if __name__ == "__main__":
