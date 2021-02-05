@@ -12,7 +12,7 @@ def jumping_3phases_parameters():
         "../models/jumper1contacts.bioMod",
     )
     time_min = 0.2, 0.05, 0.6
-    time_max = 0.5, 0.5, 0.6
+    time_max = 0.5, 0.5, 2.0
     phase_time = 0.3, 0.2, 0.6
     number_shooting_points = 30, 15, 20
 

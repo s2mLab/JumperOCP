@@ -13,10 +13,10 @@ def jumping_5phases_parameters():
         "../models/jumper1contacts.bioMod",
         "../models/jumper2contacts.bioMod",
     )
-    time_min = [0.2, 0.05, 0.05, 0.05, 0.1]
-    time_max = [0.5, 0.5, 2, 0.5, 0.5]
-    phase_time = [0.3, 0.2, 1, 0.2, 0.2]
-    number_shooting_points = [30, 15, 20, 15, 30]
+    time_min = 0.2, 0.05, 0.6, 0.05, 0.1
+    time_max = 0.5, 0.5, 2.0, 0.5, 0.5
+    phase_time = 0.3, 0.2, 0.6, 0.2, 0.2
+    number_shooting_points = 30, 15, 20, 30, 30
 
     return utils.optimize_jumping_ocp(
         model_path=model_path,

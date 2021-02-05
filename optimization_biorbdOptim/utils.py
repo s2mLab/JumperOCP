@@ -42,7 +42,7 @@ def toe_on_floor(nodes: PenaltyNodes):
     nlp = nodes.nlp
 
     nb_q = nlp.shape["q"]
-    q_reduced = nlp.X[0][:nb_q]
+    q_reduced = nodes.x[0][:nb_q]
     q = nlp.mapping["q"].to_second.map(q_reduced)
     marker_func = biorbd.to_casadi_func("toe_on_floor", nlp.model.marker, nlp.q, 2)
     toe_marker_z = marker_func(q)[2]
@@ -54,7 +54,7 @@ def heel_on_floor(nodes: PenaltyNodes):
     nlp = nodes.nlp
 
     nb_q = nlp.shape["q"]
-    q_reduced = nlp.X[0][:nb_q]
+    q_reduced = nodes.x[0][:nb_q]
     q = nlp.mapping["q"].to_second.map(q_reduced)
     marker_func = biorbd.to_casadi_func("heel_on_floor", nlp.model.marker, nlp.q, 3)
     tal_marker_z = marker_func(q)[2]
@@ -249,7 +249,6 @@ def optimize_jumping_ocp(model_path, phase_time, ns, time_min, time_max, init=No
     dynamics = DynamicsList()
     flat_foot_phases.append(0)
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Flat foot
-    final_phase = -1
     if n_phases >= 2:
         toe_only_phases.append(1)
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Toe only
@@ -257,11 +256,9 @@ def optimize_jumping_ocp(model_path, phase_time, ns, time_min, time_max, init=No
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)  # Aerial phase
     if n_phases >= 4:
         toe_only_phases.append(3)
-        final_phase = 3
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Toe only
     if n_phases >= 5:
         flat_foot_phases.append(4)
-        final_phase = 4
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Flat foot
 
     # Declare some lists to fill
@@ -274,8 +271,8 @@ def optimize_jumping_ocp(model_path, phase_time, ns, time_min, time_max, init=No
 
     # Maximize the jump height
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-100, phase=takeoff_phase)
-    if n_phases >= 3:
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE_DERIVATIVE, weight=0.1, phase=2, index=range(7, 14))
+    for p in range(2, n_phases):
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE_DERIVATIVE, weight=0.1, phase=p, index=range(7, 14))
 
     # Positivity of CoM_dot on z axis prior the take-off
     constraints.add(com_dot_z, phase=takeoff_phase, node=Node.END, min_bound=0, max_bound=np.inf)
@@ -315,16 +312,17 @@ def optimize_jumping_ocp(model_path, phase_time, ns, time_min, time_max, init=No
         )
 
         # Heel over the floor
-        # constraints.add(heel_on_floor, phase=p, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
+        # constraints.add(heel_on_floor, phase=p, node=Node.ALL, min_bound=-0.01, max_bound=np.inf)
 
     for i in range(n_phases):
         # Minimize time of the phase
-        objective_functions.add(
-            ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=0.1, phase=i, min_bound=time_min[i], max_bound=time_max[i]
-        )
+        if time_min[i] != time_max[i]:
+            objective_functions.add(
+                ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=0.1, phase=i, min_bound=time_min[i], max_bound=time_max[i]
+            )
 
         # Torque constrained to torqueMax
-        constraints.add(tau_actuator_constraints, phase=i, node=Node.ALL, minimal_tau=30)
+        constraints.add(tau_actuator_constraints, phase=i, node=Node.ALL, minimal_tau=20)
 
         # Path constraints
         x_bounds.add(bounds=QAndQDotBounds(biorbd_model[i], q_mapping=q_mapping[i], qdot_mapping=q_mapping[i]))
@@ -337,13 +335,10 @@ def optimize_jumping_ocp(model_path, phase_time, ns, time_min, time_max, init=No
         else:
             u_init.add([0] * n_tau)
 
-    # Enforce the initial and final pose (except for translation at final)
+    # Enforce the initial and target the final pose (except for translation)
     x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
-    if final_phase >= 3:
-        # pass
-        # constraints.add(ConstraintFcn.TRACK_STATE, phase=4, node=Node.END, min_bound=-0.1, max_bound=0.1, target=pose_at_first_node[2:] + [0] * n_qdot, index=range(2, 14))
-        x_bounds[final_phase].min[2:, -1] = np.concatenate((np.array(pose_at_first_node[2:]) - 0.01, [0] * n_qdot))
-        x_bounds[final_phase].max[2:, -1] = np.concatenate((np.array(pose_at_first_node[2:]) + 0.01, [0] * n_qdot))
+    if n_phases >= 4:
+        objective_functions.add(ObjectiveFcn.Mayer.TRACK_STATE, phase=n_phases-1, index=range(2, n_q+n_qdot), target=np.array([pose_at_first_node[2:] + [0] * n_qdot]).T)
 
     # Phase transition
     phase_transitions = PhaseTransitionList()
@@ -351,14 +346,14 @@ def optimize_jumping_ocp(model_path, phase_time, ns, time_min, time_max, init=No
         phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0)
     if n_phases >= 3:
         phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=1)
+        constraints.add(toe_on_floor, phase=2, node=Node.END, min_bound=-0.001, max_bound=0.001)
     if n_phases >= 4:  # Phase transition at toe strike
         phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=2)
-        constraints.add(toe_on_floor, phase=3, node=Node.START, min_bound=-0.001, max_bound=0.001)
+        constraints.add(heel_on_floor, phase=3, node=Node.END, min_bound=-0.001, max_bound=0.001)
         x_bounds[3].min[n_q:, 0] = 2 * x_bounds[3].min[n_q:, 0]  # Allow for passive velocity at reception
         x_bounds[3].max[n_q:, 0] = 2 * x_bounds[3].max[n_q:, 0]
     if n_phases >= 5:  # Phase transition at heel strike
         phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=3)
-        constraints.add(heel_on_floor, phase=4, node=Node.START, min_bound=-0.001, max_bound=0.001)
         x_bounds[4].min[n_q:, 0] = 2 * x_bounds[4].min[n_q:, 0]  # Allow for passive velocity at reception
         x_bounds[4].max[n_q:, 0] = 2 * x_bounds[4].max[n_q:, 0]
 
