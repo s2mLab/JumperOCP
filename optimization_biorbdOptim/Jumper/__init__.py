@@ -104,15 +104,11 @@ class Jumper:
         self.n_tau = tau_mapping.to_first.len
 
     def _set_dynamics(self):
-        dynamics = [
-            DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT,  # Flat foot
-            DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT,  # Toe only
-            DynamicsFcn.TORQUE_DRIVEN,               # Aerial phase
-            DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT,  # Toe only
-            DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT,  # Flat foot
-        ]
-        for p in range(self.n_phases):
-            self.dynamics.add(dynamics[p])
+        self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Flat foot
+        self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Toe only
+        self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN)               # Aerial phase
+        self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Toe only
+        self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Flat foot
 
     def _set_constraints(self):
         # Torque constrained to torqueMax
@@ -193,15 +189,14 @@ class Jumper:
             self.u_init.add([0] * self.n_tau)
 
     def _set_phase_transitions(self):
-        # Phase transition
-        phase_transition = [
-            PhaseTransitionFcn.CONTINUOUS,  # 2 contacts to 1 contact
-            PhaseTransitionFcn.CONTINUOUS,  # 1 contact to aerial
-            PhaseTransitionFcn.IMPACT,      # aerial to 1 contact
-            PhaseTransitionFcn.IMPACT,      # 1 contact to 2 contacts
-        ]
-        for p in range(self.n_phases):
-            self.phase_transitions.add(phase_transition[p], phase_pre_idx=p)
+        if self.n_phases >= 2:  # 2 contacts to 1 contact
+            self.phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0)
+        if self.n_phases >= 3:  # 1 contact to aerial
+            self.phase_transitions.add(PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=1)
+        if self.n_phases >= 4:  # aerial to 1 contact
+            self.phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=2)
+        if self.n_phases >= 5:  # 1 contact to 2 contacts
+            self.phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=3)
 
         if self.n_phases >= 3:  # The end of the aerial
             self.constraints.add(toe_on_floor, phase=2, node=Node.END, min_bound=-0.001, max_bound=0.001)
