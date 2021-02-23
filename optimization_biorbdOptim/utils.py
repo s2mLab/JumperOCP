@@ -1,12 +1,9 @@
-from time import time
-
 import numpy as np
 import biorbd
 import math
 from casadi import if_else, lt, vertcat
 
 from bioptim import (
-    Data,
     PlotType,
     InitialGuess,
     InterpolationType,
@@ -19,13 +16,12 @@ from bioptim import (
     ObjectiveList,
     DynamicsList,
     DynamicsFcn,
-    BidirectionalMapping,
+    BiMapping,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
     PhaseTransitionList,
     PhaseTransitionFcn,
-    ShowResult
 )
 
 
@@ -238,9 +234,9 @@ def optimize_jumping_ocp(model_path, phase_time, ns, time_min, time_max, init=No
     flat_foot_phases = []
     toe_only_phases = []
 
-    q_mapping = BidirectionalMapping([0, 1, 2, None, 3, None, 3, 4, 5, 6, 4, 5, 6], [0, 1, 2, 4, 7, 8, 9])
+    q_mapping = BiMapping([0, 1, 2, None, 3, None, 3, 4, 5, 6, 4, 5, 6], [0, 1, 2, 4, 7, 8, 9])
     q_mapping = [q_mapping for _ in range(n_phases)]
-    tau_mapping = BidirectionalMapping([None, None, None, None, 0, None, 0, 1, 2, 3, 1, 2, 3], [4, 7, 8, 9])
+    tau_mapping = BiMapping([None, None, None, None, 0, None, 0, 1, 2, 3, 1, 2, 3], [4, 7, 8, 9])
     tau_mapping = [tau_mapping for _ in range(n_phases)]
     n_q = q_mapping[0].to_first.len
     n_qdot = n_q
@@ -377,7 +373,6 @@ def optimize_jumping_ocp(model_path, phase_time, ns, time_min, time_max, init=No
     add_custom_plots(ocp, n_phases, x_bounds, n_q, minimal_tau=20)
 
     # Run optimizations
-    tic = time()
     sol = ocp.solve(
         show_online_optim=False,
         solver_options={"hessian_approximation": "limited-memory", "max_iter": 200}
@@ -391,8 +386,7 @@ def optimize_jumping_ocp(model_path, phase_time, ns, time_min, time_max, init=No
                         }
     )
 
-    ShowResult(ocp, sol).objective_functions()
-    ShowResult(ocp, sol).constraints()
-    print(f"Time to solve : {time() - tic}sec")
+    sol.print()
+    print(f"Time to solve : {sol.time_to_optimize}sec")
 
     return ocp, sol

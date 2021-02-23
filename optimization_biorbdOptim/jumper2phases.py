@@ -1,7 +1,3 @@
-from bioptim import (
-    ShowResult,
-)
-
 import utils
 
 
@@ -26,5 +22,4 @@ def jumping_2phases_parameters():
 
 if __name__ == "__main__":
     ocp, sol = jumping_2phases_parameters()
-    result = ShowResult(ocp, sol)
-    result.animate(n_frames=241)
+    sol.animate(n_frames=241)
