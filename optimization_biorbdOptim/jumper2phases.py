@@ -1,4 +1,4 @@
-import utils
+from Jumper import Jumper
 
 
 def jumping_2phases_parameters():
@@ -10,16 +10,19 @@ def jumping_2phases_parameters():
     time_max = 0.5, 0.5
     phase_time = 0.6, 0.2
     number_shooting_points = 30, 15
+    pose_at_first_node = [0, 0, -0.5336, 1.4, 0.8, -0.9, 0.47]
 
-    return utils.optimize_jumping_ocp(
-        model_path=model_path,
-        phase_time=phase_time,
-        ns=number_shooting_points,
+    return Jumper(
+        model_paths=model_path,
+        n_shoot=number_shooting_points,
         time_min=time_min,
+        phase_time=phase_time,
         time_max=time_max,
+        initial_pose=pose_at_first_node
     )
 
 
 if __name__ == "__main__":
-    ocp, sol = jumping_2phases_parameters()
-    sol.animate(n_frames=241)
+    jumper = jumping_2phases_parameters()
+    sol = jumper.solve(limit_memory_max_iter=200, exact_max_iter=1000)
+    sol.animate()
