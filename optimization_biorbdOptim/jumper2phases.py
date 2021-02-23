@@ -8,7 +8,7 @@ def jumping_2phases_parameters():
     )
     time_min = 0.2, 0.05
     time_max = 0.5, 0.5
-    phase_time = 0.6, 0.2
+    phase_time = 0.3, 0.2
     number_shooting_points = 30, 15
     pose_at_first_node = [0, 0, -0.5336, 1.4, 0.8, -0.9, 0.47]
 
