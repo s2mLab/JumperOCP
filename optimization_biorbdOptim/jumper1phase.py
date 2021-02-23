@@ -22,4 +22,5 @@ def jumping_1phase_parameters():
 if __name__ == "__main__":
     jumper = jumping_1phase_parameters()
     sol = jumper.solve(limit_memory_max_iter=200, exact_max_iter=1000)
+    sol.print()
     sol.animate()
