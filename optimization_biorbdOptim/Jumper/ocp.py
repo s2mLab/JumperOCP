@@ -17,9 +17,11 @@ def maximal_tau(nodes: PenaltyNodes, minimal_tau):
     for n in range(len(nodes.u)):
         bound = func(q[n], qdot[n])
         min_bound.append(
-            nlp.mapping["tau"].to_first.map(if_else(lt(bound[:, 1], minimal_tau), minimal_tau, bound[:, 1])))
+            nlp.mapping["tau"].to_first.map(if_else(lt(bound[:, 1], minimal_tau), minimal_tau, bound[:, 1]))
+        )
         max_bound.append(
-            nlp.mapping["tau"].to_first.map(if_else(lt(bound[:, 0], minimal_tau), minimal_tau, bound[:, 0])))
+            nlp.mapping["tau"].to_first.map(if_else(lt(bound[:, 0], minimal_tau), minimal_tau, bound[:, 0]))
+        )
 
     obj = vertcat(*nodes.u)
     min_bound = vertcat(*min_bound)
@@ -36,27 +38,17 @@ def com_dot_z(nodes: PenaltyNodes):
     nlp = nodes.nlp
     x = nodes.x
     q = nlp.mapping["q"].to_second.map(x[0][: nlp.shape["q"]])
-    qdot = nlp.mapping["q"].to_second.map(x[0][nlp.shape["q"]:])
+    qdot = nlp.mapping["q"].to_second.map(x[0][nlp.shape["q"] :])
     com_dot_func = biorbd.to_casadi_func("com_dot", nlp.model.CoMdot, nlp.q, nlp.qdot)
     com_dot = com_dot_func(q, qdot)
     return com_dot[2]
 
 
-def toe_on_floor(nodes: PenaltyNodes):
+def marker_on_floor(nodes: PenaltyNodes, marker, floor):
     nlp = nodes.nlp
     nb_q = nlp.shape["q"]
     q_reduced = nodes.x[0][:nb_q]
     q = nlp.mapping["q"].to_second.map(q_reduced)
-    marker_func = biorbd.to_casadi_func("toe_on_floor", nlp.model.marker, nlp.q, 2)
-    toe_marker_z = marker_func(q)[2]
-    return toe_marker_z + 0.779  # floor = -0.77865438
-
-
-def heel_on_floor(nodes: PenaltyNodes):
-    nlp = nodes.nlp
-    nb_q = nlp.shape["q"]
-    q_reduced = nodes.x[0][:nb_q]
-    q = nlp.mapping["q"].to_second.map(q_reduced)
-    marker_func = biorbd.to_casadi_func("heel_on_floor", nlp.model.marker, nlp.q, 3)
-    tal_marker_z = marker_func(q)[2]
-    return tal_marker_z + 0.779  # floor = -0.77865829
+    marker_func = biorbd.to_casadi_func("toe_on_floor", nlp.model.marker, nlp.q, marker)
+    marker_z = marker_func(q)[2]
+    return marker_z + floor

@@ -19,7 +19,7 @@ from bioptim import (
     PhaseTransitionFcn,
 )
 
-from .ocp import maximal_tau, com_dot_z, toe_on_floor, heel_on_floor
+from .ocp import maximal_tau, com_dot_z, marker_on_floor
 from .viz import add_custom_plots
 
 
@@ -35,14 +35,19 @@ class Jumper:
         self.phase_time = phase_time
         self.time_max = time_max
         self.takeoff = 0 if self.n_phases == 1 else 1  # The index of takeoff phase
-        self.flat_foot_phases = (0, 4) if self.n_phases >= 5 else 0,  # The indices of flat foot phases
-        self.toe_only_phases = (1, 3) if self.n_phases >= 4 else 1,  # The indices of toe only phases
+        self.flat_foot_phases = ((0, 4) if self.n_phases >= 5 else 0,)  # The indices of flat foot phases
+        self.toe_only_phases = ((1, 3) if self.n_phases >= 4 else 1,)  # The indices of toe only phases
 
         # Elements from the model
         self.initial_states = []
         self._set_initial_states(initial_pose, [0, 0, 0, 0, 0, 0, 0])
-        self.heel_and_toe_idx = (1, 2, 4, 5)  # Contacts indices of heel and toe in bioMod 2 contacts
-        self.toe_idx = (1, 3)  # Contacts indices of toe in bioMod 1 contact
+        self.heel_and_toe_contact_idx = (1, 2, 4, 5)  # Contacts indices of heel and toe in bioMod 2 contacts
+        self.toe_contact_idx = (1, 3)  # Contacts indices of toe in bioMod 1 contact
+        self.toe_marker = 3
+        self.heel_marker = 3
+        self.floor = 0.779  # floor = -0.77865829
+        self.tau_min = 20
+
         self.n_q, self.n_qdot, self.n_tau = -1, -1, -1
         self.q_mapping, self.qdot_mapping, self.tau_mapping = None, None, None
         self._set_dimensions_and_mapping()
@@ -52,7 +57,6 @@ class Jumper:
         self._set_dynamics()
 
         self.constraints = ConstraintList()
-        self.tau_min = 20
         self._set_constraints()
 
         self.objective_functions = ObjectiveList()
@@ -106,7 +110,7 @@ class Jumper:
     def _set_dynamics(self):
         self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Flat foot
         self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Toe only
-        self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN)               # Aerial phase
+        self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN)  # Aerial phase
         self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Toe only
         self.dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)  # Flat foot
 
@@ -119,13 +123,17 @@ class Jumper:
         self.constraints.add(com_dot_z, phase=self.takeoff, node=Node.END, min_bound=0, max_bound=np.inf)
 
         # Constraint arm positivity (prevent from local minimum with arms in the back)
-        self.constraints.add(ConstraintFcn.TRACK_STATE, phase=self.takeoff, node=Node.END, index=3, min_bound=1.0, max_bound=np.inf)
+        self.constraints.add(
+            ConstraintFcn.TRACK_STATE, phase=self.takeoff, node=Node.END, index=3, min_bound=1.0, max_bound=np.inf
+        )
 
         # Floor constraints for flat foot phases
         for p in self.flat_foot_phases:
             # Do not pull on floor
-            for i in self.heel_and_toe_idx:
-                self.constraints.add(ConstraintFcn.CONTACT_FORCE, phase=p, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
+            for i in self.heel_and_toe_contact_idx:
+                self.constraints.add(
+                    ConstraintFcn.CONTACT_FORCE, phase=p, node=Node.ALL, contact_force_idx=i, max_bound=np.inf
+                )
 
             # Non-slipping constraints
             self.constraints.add(  # On only one of the feet
@@ -140,8 +148,21 @@ class Jumper:
         # Floor constraints for toe only phases
         for p in self.toe_only_phases:
             # Do not pull on floor
-            for i in self.toe_idx:
-                self.constraints.add(ConstraintFcn.CONTACT_FORCE, phase=p, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
+            for i in self.toe_contact_idx:
+                self.constraints.add(
+                    ConstraintFcn.CONTACT_FORCE, phase=p, node=Node.ALL, contact_force_idx=i, max_bound=np.inf
+                )
+
+            # The heel must remain over floor
+            self.constraints.add(
+                marker_on_floor,
+                phase=p,
+                node=Node.ALL,
+                min_bound=-0.001,
+                max_bound=np.inf,
+                marker=self.heel_marker,
+                floor=self.floor,
+            )
 
             # Non-slipping constraints
             self.constraints.add(  # On only one of the feet
@@ -161,19 +182,30 @@ class Jumper:
         for p in range(2, 5):
             if p >= self.n_phases:
                 break
-            self.objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE_DERIVATIVE, weight=0.1, phase=p, index=range(self.n_q, self.n_q + self.n_qdot))
+            self.objective_functions.add(
+                ObjectiveFcn.Lagrange.MINIMIZE_STATE_DERIVATIVE,
+                weight=0.1,
+                phase=p,
+                index=range(self.n_q, self.n_q + self.n_qdot),
+            )
 
         for i in range(self.n_phases):
             # Minimize time of the phase
             if self.time_min[i] != self.time_max[i]:
                 self.objective_functions.add(
-                    ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=0.1, phase=i, min_bound=self.time_min[i], max_bound=self.time_max[i]
+                    ObjectiveFcn.Mayer.MINIMIZE_TIME,
+                    weight=0.1,
+                    phase=i,
+                    min_bound=self.time_min[i],
+                    max_bound=self.time_max[i],
                 )
 
     def _set_boundary_conditions(self):
         for i in range(self.n_phases):
             # Path constraints
-            self.x_bounds.add(bounds=QAndQDotBounds(self.models[i], q_mapping=self.q_mapping[i], qdot_mapping=self.qdot_mapping[i]))
+            self.x_bounds.add(
+                bounds=QAndQDotBounds(self.models[i], q_mapping=self.q_mapping[i], qdot_mapping=self.qdot_mapping[i])
+            )
             self.u_bounds.add([-500] * self.n_tau, [500] * self.n_tau)
 
         # Enforce the initial pose and velocity
@@ -181,7 +213,12 @@ class Jumper:
 
         # Target the final pose (except for translation) and velocity
         if self.n_phases >= 4:
-            self.objective_functions.add(ObjectiveFcn.Mayer.TRACK_STATE, phase=self.n_phases - 1, index=range(2, self.n_q + self.n_qdot), target=self.initial_states[2:, :])
+            self.objective_functions.add(
+                ObjectiveFcn.Mayer.TRACK_STATE,
+                phase=self.n_phases - 1,
+                index=range(2, self.n_q + self.n_qdot),
+                target=self.initial_states[2:, :],
+            )
 
     def _set_initial_guesses(self):
         for i in range(self.n_phases):
@@ -199,17 +236,33 @@ class Jumper:
             self.phase_transitions.add(PhaseTransitionFcn.IMPACT, phase_pre_idx=3)
 
         if self.n_phases >= 3:  # The end of the aerial
-            self.constraints.add(toe_on_floor, phase=2, node=Node.END, min_bound=-0.001, max_bound=0.001)
+            self.constraints.add(
+                marker_on_floor,
+                phase=2,
+                node=Node.END,
+                min_bound=-0.001,
+                max_bound=0.001,
+                marker=self.toe_marker,
+                floor=self.floor,
+            )
         if self.n_phases >= 4:  # 2 contacts on floor
-            self.constraints.add(heel_on_floor, phase=3, node=Node.END, min_bound=-0.001, max_bound=0.001)
+            self.constraints.add(
+                marker_on_floor,
+                phase=3,
+                node=Node.END,
+                min_bound=-0.001,
+                max_bound=0.001,
+                marker=self.heel_marker,
+                floor=self.floor,
+            )
 
         # Allow for passive velocity at reception
         if self.n_phases >= 4:
-            self.x_bounds[3].min[self.n_q:, 0] = 2 * self.x_bounds[3].min[self.n_q:, 0]
-            self.x_bounds[3].max[self.n_q:, 0] = 2 * self.x_bounds[3].max[self.n_q:, 0]
+            self.x_bounds[3].min[self.n_q :, 0] = 2 * self.x_bounds[3].min[self.n_q :, 0]
+            self.x_bounds[3].max[self.n_q :, 0] = 2 * self.x_bounds[3].max[self.n_q :, 0]
         if self.n_phases >= 5:
-            self.x_bounds[4].min[self.n_q:, 0] = 2 * self.x_bounds[4].min[self.n_q:, 0]
-            self.x_bounds[4].max[self.n_q:, 0] = 2 * self.x_bounds[4].max[self.n_q:, 0]
+            self.x_bounds[4].min[self.n_q :, 0] = 2 * self.x_bounds[4].min[self.n_q :, 0]
+            self.x_bounds[4].max[self.n_q :, 0] = 2 * self.x_bounds[4].max[self.n_q :, 0]
 
     def solve(self, limit_memory_max_iter, exact_max_iter, load_path=None, force_no_graph=False):
         def warm_start(ocp, sol):
@@ -236,17 +289,18 @@ class Jumper:
             if limit_memory_max_iter > 0:
                 sol = self.ocp.solve(
                     show_online_optim=exact_max_iter == 0 and not force_no_graph,
-                    solver_options={"hessian_approximation": "limited-memory", "max_iter": limit_memory_max_iter}
+                    solver_options={"hessian_approximation": "limited-memory", "max_iter": limit_memory_max_iter},
                 )
             if limit_memory_max_iter > 0 and exact_max_iter > 0:
                 warm_start(self.ocp, sol)
             if exact_max_iter > 0:
                 sol = self.ocp.solve(
                     show_online_optim=True and not force_no_graph,
-                    solver_options={"hessian_approximation": "exact",
-                                    "max_iter": exact_max_iter,
-                                    "warm_start_init_point": "yes",
-                                    }
+                    solver_options={
+                        "hessian_approximation": "exact",
+                        "max_iter": exact_max_iter,
+                        "warm_start_init_point": "yes",
+                    },
                 )
 
             return sol

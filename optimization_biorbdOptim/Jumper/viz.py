@@ -13,15 +13,73 @@ def add_custom_plots(ocp, minimal_tau=None):
 
         # Plot Torque Bounds
         if not minimal_tau:
-            ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp), phase=i, plot_type=PlotType.STEP, color="g")
-            ocp.add_plot("tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp), phase=i, plot_type=PlotType.STEP, color="g")
+            ocp.add_plot(
+                "tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp), phase=i, plot_type=PlotType.STEP, color="g"
+            )
+            ocp.add_plot(
+                "tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp), phase=i, plot_type=PlotType.STEP, color="g"
+            )
         else:
-            ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp), phase=i, plot_type=PlotType.STEP, color="g", linestyle="-.")
-            ocp.add_plot("tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp), phase=i, plot_type=PlotType.STEP, color="g", linestyle="-.")
-            ocp.add_plot("tau", lambda x, u, p: plot_torque_bounds(x, 0, nlp, minimal_tau=minimal_tau), phase=i, plot_type=PlotType.STEP, color="g")
-            ocp.add_plot("tau", lambda x, u, p: -plot_torque_bounds(x, 1, nlp, minimal_tau=minimal_tau), phase=i, plot_type=PlotType.STEP, color="g")
-        ocp.add_plot("q_degree", lambda x, u, p: x[:7, :] * 180 / math.pi, phase=i, plot_type=PlotType.INTEGRATED, legend=("q_Pelvis_Trans_Y", "q_Pelvis_Trans_Z", "q_Pelvis_Rot_X", "q_BrasD_Rot_X", "q_CuisseD_Rot_X", "q_JambeD_Rot_X", "q_Pied_Rot_X"))
-        ocp.add_plot("qdot_degree", lambda x, u, p: x[7:, :] * 180 / math.pi, phase=i, plot_type=PlotType.INTEGRATED, legend=("qdot_Pelvis_Trans_Y", "qdot_Pelvis_Trans_Z", "qdot_Pelvis_Rot_X", "qdot_BrasD_Rot_X", "qdot_CuisseD_Rot_X", "qdot_JambeD_Rot_X", "qdot_Pied_Rot_X"))
+            ocp.add_plot(
+                "tau",
+                lambda x, u, p: plot_torque_bounds(x, 0, nlp),
+                phase=i,
+                plot_type=PlotType.STEP,
+                color="g",
+                linestyle="-.",
+            )
+            ocp.add_plot(
+                "tau",
+                lambda x, u, p: -plot_torque_bounds(x, 1, nlp),
+                phase=i,
+                plot_type=PlotType.STEP,
+                color="g",
+                linestyle="-.",
+            )
+            ocp.add_plot(
+                "tau",
+                lambda x, u, p: plot_torque_bounds(x, 0, nlp, minimal_tau=minimal_tau),
+                phase=i,
+                plot_type=PlotType.STEP,
+                color="g",
+            )
+            ocp.add_plot(
+                "tau",
+                lambda x, u, p: -plot_torque_bounds(x, 1, nlp, minimal_tau=minimal_tau),
+                phase=i,
+                plot_type=PlotType.STEP,
+                color="g",
+            )
+        ocp.add_plot(
+            "q_degree",
+            lambda x, u, p: x[:7, :] * 180 / math.pi,
+            phase=i,
+            plot_type=PlotType.INTEGRATED,
+            legend=(
+                "q_Pelvis_Trans_Y",
+                "q_Pelvis_Trans_Z",
+                "q_Pelvis_Rot_X",
+                "q_BrasD_Rot_X",
+                "q_CuisseD_Rot_X",
+                "q_JambeD_Rot_X",
+                "q_Pied_Rot_X",
+            ),
+        )
+        ocp.add_plot(
+            "qdot_degree",
+            lambda x, u, p: x[7:, :] * 180 / math.pi,
+            phase=i,
+            plot_type=PlotType.INTEGRATED,
+            legend=(
+                "qdot_Pelvis_Trans_Y",
+                "qdot_Pelvis_Trans_Z",
+                "qdot_Pelvis_Rot_X",
+                "qdot_BrasD_Rot_X",
+                "qdot_CuisseD_Rot_X",
+                "qdot_JambeD_Rot_X",
+                "qdot_Pied_Rot_X",
+            ),
+        )
         ocp.add_plot("tau", lambda x, u, p: np.zeros((4, len(x[0]))), phase=i, plot_type=PlotType.STEP, color="b")
         # Plot CoM pos and speed
         ocp.add_plot("CoM", lambda x, u, p: plot_com(x, nlp), phase=i, plot_type=PlotType.PLOT)

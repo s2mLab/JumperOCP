@@ -20,7 +20,7 @@ def jumping_4phases_parameters():
         time_min=time_min,
         phase_time=phase_time,
         time_max=time_max,
-        initial_pose=pose_at_first_node
+        initial_pose=pose_at_first_node,
     )
 
 
