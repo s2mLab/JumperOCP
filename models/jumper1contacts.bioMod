@@ -6,7 +6,7 @@ version   4
 // Informations about Pelvis segment
     // Segment
     segment    Pelvis
-        RT -0.15 0 0 xyz 0 0 0
+        RT -0.1 0 0 xyz 0 0 0.8
         translations yz
         rotations    x
         rangesQ -2.5 2.5
@@ -100,12 +100,12 @@ version   4
         technical 1
     endmarker
 
-/*
+
 // Informations about Thorax segment
     // Segment
     segment    Thorax
         parent    Pelvis
-        RT -0.293 0 0 xyz 0.0000000000 -0.0515404739 0.1813885235
+        RT 0 0 0 xyz 0.0000000000 -0.0515404739 0.1813885235
         mass    20.46000
         inertia
             0.5204000000    0.0000000000    0.0000000000
@@ -161,7 +161,7 @@ version   4
     // Segment
     segment    Head
         parent    Thorax
-        RT -0.4 0 0 xyz 0.0000000000 0.0435036145 0.3479414452
+        RT 0 0 0 xyz 0.0000000000 0.0435036145 0.3479414452
         mass    5.12000
         inertia
             0.0881000000    0.0000000000    0.0000000000
@@ -206,6 +206,7 @@ version   4
         technical 1
     endmarker
 
+
 // Informations about ArmR segment
     // Segment
     segment    ArmR
@@ -217,9 +218,9 @@ version   4
             0.311503672   -0.047271576    0.949068417    0.211508031
             0.000000000    0.000000000    0.000000000    1.000000000
         rotations    zx
-        rangesQ -0.1 0.1 
+        rangesQ -0.1 0.1
                 -0.7 3.1
-        rangesQdot -17 13 
+        rangesQdot -17 13
                    -17 17
         mass    2.36000
         inertia
@@ -431,11 +432,11 @@ version   4
            -0.311503672   -0.047271576    0.949068417    0.211508031
             0.000000000    0.000000000    0.000000000    1.000000000
         rotations    zx
-        rangesQ -0.1 0.1 
+        rangesQ -0.1 0.1
                 -0.7 3.1
-        rangesQdot -17 13 
+        rangesQdot -17 13
                    -17 17
-        mass    2.39085
+        mass    2.36000
         inertia
             0.0188000000    0.0000000000    0.0000000000
             0.0000000000    0.0188000000    0.0000000000
@@ -632,8 +633,6 @@ version   4
             position   -0.019270610   -0.007717575   -0.051481325
             technical 1
         endmarker
-
-*/
 
 
 // Informations about ThighR segment
@@ -1077,7 +1076,7 @@ version   4
         rotations    x
         rangesQ -0.7 0.7
         rangesQdot -17 17
-        mass    0.77311
+        mass    1.16000
         inertia
 			0.0089000000	0.0000000000	0.0000000000
 			0.0000000000	0.0011000000	0.0000000000
@@ -1167,3 +1166,12 @@ version   4
             position   -0.036155491    0.137758377    -0.001350008-0.01
             axis    yz
         endcontact
+
+        marker  CONTACT_HEEL
+            parent    FootL
+            position   -0.01500000    0.000000000    -0.0251726535
+        endmarker
+        marker  CONTACT_TOE
+            parent    FootL
+            position   -0.036155491    0.137758377    -0.001350008-0.01
+        endmarker
