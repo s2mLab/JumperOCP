@@ -10,7 +10,9 @@ qdot = np.zeros((13,))
 tau_from_id = m.InverseDynamics(q0, np.zeros((13,)), np.zeros((13,)), None).to_array()
 
 tau_no_root = copy(tau_from_id)
-tau_no_root[:3,] = 0
+tau_no_root[
+    :3,
+] = 0
 
 cs = m.getConstraints()
 a = m.ForwardDynamicsConstraintsDirect(q0, qdot, tau_from_id, cs).to_array()

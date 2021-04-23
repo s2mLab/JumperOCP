@@ -16,8 +16,6 @@ from bioptim import (
     DynamicsFcn,
     BidirectionalMapping,
     Mapping,
-    StateTransition,
-    StateTransitionList,
     BoundsList,
     QAndQDotBounds,
     InitialGuessList,
@@ -37,11 +35,11 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     q_mapping = BidirectionalMapping(
         Mapping([0, 1, 2, -1, 3, -1, 3, 4, 5, 6, 4, 5, 6], [5]), Mapping([0, 1, 2, 4, 7, 8, 9])
     )
-    q_mapping = q_mapping, q_mapping, q_mapping, q_mapping, q_mapping
+    q_mapping = q_mapping, q_mapping, q_mapping
     tau_mapping = BidirectionalMapping(
         Mapping([-1, -1, -1, -1, 0, -1, 0, 1, 2, 3, 1, 2, 3], [5]), Mapping([4, 7, 8, 9])
     )
-    tau_mapping = tau_mapping, tau_mapping, tau_mapping, tau_mapping, tau_mapping
+    tau_mapping = tau_mapping, tau_mapping, tau_mapping
     nq = len(q_mapping[0].reduce.map_idx)
 
     # Add objective functions
@@ -53,8 +51,6 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_WITH_CONTACT)
 
     # --- Constraints --- #
     constraints = ConstraintList()
@@ -63,11 +59,9 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     contact_axes = (1, 2, 4, 5)
     for i in contact_axes:
         constraints.add(ConstraintFcn.CONTACT_FORCE, phase=0, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
-        constraints.add(ConstraintFcn.CONTACT_FORCE, phase=4, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
     contact_axes = (1, 3)
     for i in contact_axes:
         constraints.add(ConstraintFcn.CONTACT_FORCE, phase=1, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
-        constraints.add(ConstraintFcn.CONTACT_FORCE, phase=3, node=Node.ALL, contact_force_idx=i, max_bound=np.inf)
 
     # Non-slipping constraints
     # N.B.: Application on only one of the two feet is sufficient, as the slippage cannot occurs on only one foot.
@@ -87,26 +81,6 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
         tangential_component_idx=0,
         static_friction_coefficient=0.5,
     )
-    constraints.add(
-        ConstraintFcn.NON_SLIPPING,
-        phase=3,
-        node=Node.ALL,
-        normal_component_idx=1,
-        tangential_component_idx=0,
-        static_friction_coefficient=0.5,
-    )
-    constraints.add(
-        ConstraintFcn.NON_SLIPPING,
-        phase=4,
-        node=Node.ALL,
-        normal_component_idx=(1, 2),
-        tangential_component_idx=0,
-        static_friction_coefficient=0.5,
-    )
-
-    # Custom constraints for contact forces at transitions
-    constraints.add(utils.toe_on_floor, phase=3, node=Node.START, min_bound=-0.0001, max_bound=0.0001)
-    constraints.add(utils.heel_on_floor, phase=4, node=Node.START, min_bound=-0.0001, max_bound=0.0001)
 
     # Custom constraints for positivity of CoM_dot on z axis just before the take-off
     constraints.add(utils.com_dot_z, phase=1, node=Node.END, min_bound=0, max_bound=np.inf)
@@ -118,7 +92,6 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     constraints.add(utils.heel_on_floor, phase=1, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
     constraints.add(utils.heel_on_floor, phase=2, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
     constraints.add(utils.toe_on_floor, phase=2, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
-    constraints.add(utils.heel_on_floor, phase=3, node=Node.ALL, min_bound=-0.0001, max_bound=np.inf)
 
     # Torque constraint + minimize_state
     for i in range(nb_phases):
@@ -126,11 +99,6 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
         objective_functions.add(
             ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=0.0001, phase=i, min_bound=time_min[i], max_bound=time_max[i]
         )
-
-    # State transitions
-    state_transitions = StateTransitionList()
-    state_transitions.add(StateTransition.IMPACT, phase_pre_idx=2)
-    state_transitions.add(StateTransition.IMPACT, phase_pre_idx=3)
 
     # Path constraint
     nb_q = q_mapping[0].reduce.len
@@ -142,14 +110,6 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
     for i in range(nb_phases):
         x_bounds.add(bounds=QAndQDotBounds(biorbd_model[i], all_generalized_mapping=q_mapping[i]))
     x_bounds[0][:, 0] = pose_at_first_node + [0] * nb_q_dot
-
-    x_bounds[3].min[13, 0] = -1000
-    x_bounds[3].max[13, 0] = 1000
-
-    x_bounds[4].min[13, 0] = -1000
-    x_bounds[4].max[13, 0] = 1000
-
-    x_bounds[4][2:, -1] = pose_at_first_node[2:] + [0] * nb_q_dot
 
     # Initial guess for states (Interpolation type is CONSTANT)
     x_init = InitialGuessList()
@@ -185,7 +145,6 @@ def prepare_ocp(model_path, phase_time, ns, time_min, time_max, init):
         q_mapping=q_mapping,
         q_dot_mapping=q_mapping,
         tau_mapping=tau_mapping,
-        state_transitions=state_transitions,
         nb_threads=2,
         use_SX=False,
     )
@@ -196,7 +155,7 @@ def main(args=None):
     if args:
         init = args[:-1]
         pwd = args[-1]
-        save_path = "5p_init_"+str(init[0])+"_"+str(init[1])+"_"+str(init[2])+"_"+str(init[3])+"_sol.bo"
+        save_path = "3p_init_"+str(init[0])+"_"+str(init[1])+"_"+str(init[2])+"_"+str(init[3])+"_sol.bo"
         if os.path.exists(save_path):
             return
 
@@ -204,13 +163,11 @@ def main(args=None):
         "../models/jumper2contacts.bioMod",
         "../models/jumper1contacts.bioMod",
         "../models/jumper1contacts.bioMod",
-        "../models/jumper1contacts.bioMod",
-        "../models/jumper2contacts.bioMod",
     )
-    time_min = [0.2, 0.05, 0.05, 0.01, 0.01]
-    time_max = [1, 1, 2, 0.2, 1]
-    phase_time = [0.6, 0.2, 1, 0.2, 0.6]
-    number_shooting_points = [30, 15, 20, 15, 30]
+    time_min = [0.2, 0.05, 0.6]
+    time_max = [1, 1, 0.6]
+    phase_time = [0.6, 0.2, 1]
+    number_shooting_points = [30, 15, 20]
 
     tic = time()
 
