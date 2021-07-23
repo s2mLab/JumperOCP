@@ -1,5 +1,5 @@
 from copy import copy
-import biorbd
+import biorbd_casadi as biorbd
 import numpy as np
 
 m = biorbd.Model("../models/jumper2contacts.bioMod")
