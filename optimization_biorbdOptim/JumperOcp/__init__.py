@@ -16,6 +16,7 @@ from bioptim import (
     InitialGuessList,
     PhaseTransitionList,
     BiMappingList,
+    ControlType,
 )
 
 from .jumper import Jumper
@@ -37,12 +38,14 @@ class JumperOcp:
     x_init = InitialGuessList()
     u_init = InitialGuessList()
 
-    def __init__(self, path_to_models, n_phases, n_thread=8):
+    def __init__(self, path_to_models, n_phases, n_thread=8, control_type=ControlType.CONSTANT):
         if n_phases < 1 or n_phases > 5:
             raise ValueError("n_phases must be comprised between 1 and 5")
         self.jumper = Jumper(path_to_models)
         self.n_phases = n_phases
         self.takeoff = 0 if self.n_phases == 1 else 1  # The index of takeoff phase
+        self.control_type = control_type
+        self.control_nodes = Node.ALL if self.control_type == ControlType.LINEAR_CONTINUOUS else Node.ALL_SHOOTING
 
         self._set_dimensions_and_mapping()
         self._set_initial_states()
@@ -70,6 +73,7 @@ class JumperOcp:
             variable_mappings=self.mapping_list,
             phase_transitions=self.phase_transitions,
             n_threads=n_thread,
+            control_type=self.control_type,
         )
 
     def _set_initial_states(self):
@@ -98,7 +102,7 @@ class JumperOcp:
     def _set_constraints(self):
         # Torque constrained to torqueMax
         for i in range(self.n_phases):
-            self.constraints.add(ConstraintFcn.TORQUE_MAX_FROM_Q_AND_QDOT, phase=i, node=Node.ALL_SHOOTING, min_torque=self.jumper.tau_min)
+            self.constraints.add(ConstraintFcn.TORQUE_MAX_FROM_Q_AND_QDOT, phase=i, node=self.control_nodes, min_torque=self.jumper.tau_min)
 
         # Positivity of CoM_dot on z axis prior the take-off
         self.constraints.add(com_dot_z, phase=self.takeoff, node=Node.END, min_bound=0, max_bound=np.inf)
@@ -116,14 +120,14 @@ class JumperOcp:
             # Do not pull on floor
             for i in self.jumper.flatfoot_contact_z_idx:
                 self.constraints.add(
-                    ConstraintFcn.TRACK_CONTACT_FORCES, phase=p, node=Node.ALL_SHOOTING, contact_index=i, max_bound=np.inf
+                    ConstraintFcn.TRACK_CONTACT_FORCES, phase=p, node=self.control_nodes, contact_index=i, max_bound=np.inf
                 )
 
             # Non-slipping constraints
             self.constraints.add(  # On only one of the feet
                 ConstraintFcn.NON_SLIPPING,
                 phase=p,
-                node=Node.ALL_SHOOTING,
+                node=self.control_nodes,
                 tangential_component_idx=self.jumper.flatfoot_non_slipping[0],
                 normal_component_idx=self.jumper.flatfoot_non_slipping[1],
                 static_friction_coefficient=self.jumper.static_friction_coefficient,
@@ -137,7 +141,7 @@ class JumperOcp:
             # Do not pull on floor
             for i in self.jumper.toe_contact_z_idx:
                 self.constraints.add(
-                    ConstraintFcn.TRACK_CONTACT_FORCES, phase=p, node=Node.ALL_SHOOTING, contact_index=i, max_bound=np.inf
+                    ConstraintFcn.TRACK_CONTACT_FORCES, phase=p, node=self.control_nodes, contact_index=i, max_bound=np.inf
                 )
 
             # The heel must remain over floor
@@ -156,7 +160,7 @@ class JumperOcp:
             self.constraints.add(  # On only one of the feet
                 ConstraintFcn.NON_SLIPPING,
                 phase=p,
-                node=Node.ALL_SHOOTING,
+                node=self.control_nodes,
                 tangential_component_idx=self.jumper.toe_non_slipping[0],
                 normal_component_idx=self.jumper.toe_non_slipping[1],
                 static_friction_coefficient=self.jumper.static_friction_coefficient,
@@ -179,6 +183,16 @@ class JumperOcp:
                 )
 
         # Minimize unnecessary acceleration during for the aerial and reception phases
+        for p in range(self.n_phases):
+            if self.control_type == ControlType.LINEAR_CONTINUOUS:
+                self.objective_functions.add(
+                    ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+                    key="tau",
+                    weight=0.1,
+                    derivative=True,
+                    phase=p,
+                )
+
         for p in range(2, self.n_phases):
             self.objective_functions.add(
                 ObjectiveFcn.Lagrange.MINIMIZE_STATE,
@@ -205,8 +219,9 @@ class JumperOcp:
             self.x_bounds.add(
                 bounds=QAndQDotBounds(self.jumper.models[i], dof_mappings=self.mapping_list)
             )
-            if i == 1:
-                self.x_bounds[i].min[self.jumper.arm_dof, -1] = 1  # Force jumping with arm in front
+            if i == 3 or i == 4:
+                # Allow greater speed in passive reception
+                self.x_bounds[i].max[self.jumper.heel_dof + self.n_q, :] *= 2
             self.u_bounds.add([-500] * self.n_tau, [500] * self.n_tau)
 
         # Enforce the initial pose and velocity
@@ -309,10 +324,16 @@ class JumperOcp:
             x_init_guess = InitialGuessList()
             for i in range(ocp.n_phases):
                 if ocp.n_phases == 1:
-                    u_init_guess.add(ctrl["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+                    if ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                        u_init_guess.add(ctrl["all"], interpolation=InterpolationType.EACH_FRAME)
+                    else:
+                        u_init_guess.add(ctrl["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
                     x_init_guess.add(state["all"], interpolation=InterpolationType.EACH_FRAME)
                 else:
-                    u_init_guess.add(ctrl[i]["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+                    if ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
+                        u_init_guess.add(ctrl[i]["all"], interpolation=InterpolationType.EACH_FRAME)
+                    else:
+                        u_init_guess.add(ctrl[i]["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
                     x_init_guess.add(state[i]["all"], interpolation=InterpolationType.EACH_FRAME)
 
             time_init_guess = InitialGuess(param["time"], name="time")

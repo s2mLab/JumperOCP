@@ -31,6 +31,7 @@ class Jumper:
     initial_velocity = [0, 0, 0, 0, 0, 0, 0]
     tau_min = 20  # Tau minimal bound despite the torque activation
     arm_dof = 3
+    heel_dof = 6
     heel_marker_idx = 85
     toe_marker_idx = 86
 
