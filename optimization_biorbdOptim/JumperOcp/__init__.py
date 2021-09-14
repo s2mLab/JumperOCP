@@ -222,7 +222,7 @@ class JumperOcp:
             if i == 3 or i == 4:
                 # Allow greater speed in passive reception
                 self.x_bounds[i].max[self.jumper.heel_dof + self.n_q, :] *= 2
-            self.u_bounds.add([-500] * self.n_tau, [500] * self.n_tau)
+            self.u_bounds.add([-self.jumper.tau_constant_bound] * self.n_tau, [self.jumper.tau_constant_bound] * self.n_tau)
 
         # Enforce the initial pose and velocity
         self.x_bounds[0][:, 0] = self.initial_states[:, 0]
@@ -318,28 +318,6 @@ class JumperOcp:
             self.x_bounds[4].max[self.n_q :, 0] = 2 * self.x_bounds[4].max[self.n_q :, 0]
 
     def solve(self, limit_memory_max_iter, exact_max_iter, load_path=None, force_no_graph=False):
-        def warm_start(ocp, sol):
-            state, ctrl, param = sol.states, sol.controls, sol.parameters
-            u_init_guess = InitialGuessList()
-            x_init_guess = InitialGuessList()
-            for i in range(ocp.n_phases):
-                if ocp.n_phases == 1:
-                    if ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                        u_init_guess.add(ctrl["all"], interpolation=InterpolationType.EACH_FRAME)
-                    else:
-                        u_init_guess.add(ctrl["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
-                    x_init_guess.add(state["all"], interpolation=InterpolationType.EACH_FRAME)
-                else:
-                    if ocp.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                        u_init_guess.add(ctrl[i]["all"], interpolation=InterpolationType.EACH_FRAME)
-                    else:
-                        u_init_guess.add(ctrl[i]["all"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
-                    x_init_guess.add(state[i]["all"], interpolation=InterpolationType.EACH_FRAME)
-
-            time_init_guess = InitialGuess(param["time"], name="time")
-            ocp.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, param_init=time_init_guess)
-            ocp.solver.set_lagrange_multiplier(sol)
-
         # Run optimizations
         if not force_no_graph:
             add_custom_plots(self.ocp, self)
@@ -351,7 +329,7 @@ class JumperOcp:
             sol = None
             if limit_memory_max_iter > 0:
                 sol = self.ocp.solve(
-                    show_online_optim=exact_max_iter == 0 and not force_no_graph,
+                    show_online_optim=True, #exact_max_iter == 0 and not force_no_graph,
                     solver_options={
                         "hessian_approximation": "limited-memory",
                         "max_iter": limit_memory_max_iter,
@@ -359,7 +337,7 @@ class JumperOcp:
                     },
                 )
             if limit_memory_max_iter > 0 and exact_max_iter > 0:
-                warm_start(self.ocp, sol)
+                self.ocp.set_warm_start(sol)
             if exact_max_iter > 0:
                 sol = self.ocp.solve(
                     show_online_optim=True and not force_no_graph,

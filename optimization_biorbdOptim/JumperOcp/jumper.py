@@ -2,7 +2,7 @@ import biorbd_casadi as biorbd
 from scipy import optimize
 import numpy as np
 from casadi import MX
-from bioptim import BiMapping
+from bioptim import BiMapping, Bounds
 
 
 class Jumper:
@@ -26,6 +26,7 @@ class Jumper:
         [None, None, None, 0, 0, 1, 2, 3, 1, 2, 3],
         [3, 5, 6, 7]
     )
+    tau_constant_bound = 500
     initial_states = []
     body_at_first_node = [0, 0, 0, 2.10, 1.15, 0.80, 0.20]
     initial_velocity = [0, 0, 0, 0, 0, 0, 0]
